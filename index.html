@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiesteala.com | Invitaciones que Deslumbran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Great+Vibes&family=Cinzel:wght@400;700&family=Bebas+Neue&family=Parisienne&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        script: ['Great Vibes', 'cursive'],
+                        serif: ['Cinzel', 'serif'],
+                        condensed: ['Bebas Neue', 'sans-serif'],
+                        elegant: ['Parisienne', 'cursive'],
+                        editorial: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            blue: '#2563eb',
+                            orange: '#f59e0b',
+                            dark: '#0f172a',
+                            darker: '#020617',
+                        }
+                    },
+                    backgroundImage: {
+                        'hero-glow': 'radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.15), transparent 70%)',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #020617;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Ocultar barra de scroll en elementos específicos pero permitir scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Estilo específico para el scroll dentro del celular */
+        .phone-scroll {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .phone-scroll::-webkit-scrollbar {
+            width: 0px;
+            background: transparent; /* Chrome/Safari/Webkit */
+        }
+
+        /* --- LOGO ANIMATIONS --- */
+        .logo-container { width: 100%; max-width: 200px; display: block; cursor: pointer; }
+        @keyframes click-press { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(0.92) rotate(-2deg); } }
+        @keyframes confetti-pop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
+        @keyframes dot-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4); fill: #2563eb; box-shadow: 0 0 10px #2563eb; } }
+        .cursor-icon, .spark-group, .dot-icon { transform-origin: center; transform-box: fill-box; transition: transform 0.5s ease; }
+        .animating .cursor-icon { animation: click-press 0.6s ease-in-out forwards; }
+        .animating .spark-group { animation: confetti-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animating .dot-icon { animation: dot-beat 0.6s ease-in-out forwards; }
+
+        /* --- UI EFFECTS --- */
+        .glass-nav { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-card { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.2)); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        
+        .blob { position: absolute; filter: blur(80px); z-index: -1; opacity: 0.4; animation: float 10s infinite ease-in-out; }
+        
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        /* Selector Styling */
+        .selector-card { transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+        .selector-card.active { background: rgba(37, 99, 235, 0.1); border-color: #2563eb; transform: scale(1.02); }
+        .selector-card:hover:not(.active) { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.2); }
+
+        /* Phone Screen Transitions */
+        .phone-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none; z-index: 0; overflow-y: auto; background-color: #fff; }
+        .phone-slide.active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        /* --- STYLES FOR IN-PHONE CONTENT --- */
+        .invitation-body { font-family: 'Outfit', sans-serif; color: #333; line-height: 1.5; }
+
+        /* --- CLIENT VIEW CONTAINER --- */
+        #client-view-container {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 20000; /* Encima de todo */
+            overflow-y: auto;
+            display: none; /* Oculto por defecto */
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-brand-orange selection:text-white">
+
+    <!-- ========================================= -->
+    <!--            CLIENT VIEW (INVITACIÓN FINAL) -->
+    <!-- ========================================= -->
+    <!-- Este contenedor solo se mostrará si hay un parámetro ?invitacion=... en la URL -->
+    <div id="client-view-container">
+        <!-- El contenido HTML de la invitación se inyectará aquí -->
+    </div>
+
+
+    <!-- ========================================= -->
+    <!--            LANDING PAGE PRINCIPAL         -->
+    <!-- ========================================= -->
+    <div id="landing-page" class="transition-opacity duration-300">
+        
+        <div class="blob bg-brand-blue w-96 h-96 rounded-full top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="blob bg-brand-orange w-80 h-80 rounded-full bottom-0 right-0 translate-x-1/3 translate-y-1/3 animation-delay-2000"></div>
+
+        <!-- NAV BAR -->
+        <nav class="fixed w-full z-50 glass-nav transition-all duration-300" id="navbar">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-24">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="#" class="logo-container logo-animatable block" style="width: 220px;"> 
+                            <svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo fiesteala.com">
+                                <g transform="translate(50, 20)">
+                                    <path class="cursor-icon" d="M10,10 L30,70 L45,45 L70,30 Z" fill="#2563eb" stroke="#ffffff" stroke-width="3" />
+                                    <g class="spark-group" transform="translate(10, 10)">
+                                        <path d="M-3,-6 L-6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <path d="M-6,-3 L-12,-6" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <path d="M3,-6 L6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <circle cx="-9" cy="-9" r="2" fill="#f59e0b" />
+                                    </g>
+                                </g>
+                                <g transform="translate(130, 85)">
+                                    <text font-family="sans-serif" font-weight="800" font-size="44" fill="#ffffff" letter-spacing="-1">fiesteala</text>
+                                    <circle class="dot-icon" cx="182" cy="-5" r="4.5" fill="#2563eb" />
+                                    <text x="188" y="0" font-family="sans-serif" font-weight="400" font-size="24" fill="#2563eb">com</text>
+                                </g>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="hidden md:flex space-x-8 items-center">
+                        <a href="#como-funciona" class="text-slate-300 hover:text-brand-orange text-sm font-bold tracking-wide">CÓMO FUNCIONA</a>
+                        <a href="#ejemplos" class="text-slate-300 hover:text-brand-orange text-sm font-bold tracking-wide">EJEMPLOS</a>
+                        <a href="#precios" class="text-slate-300 hover:text-brand-orange text-sm font-bold tracking-wide">PRECIOS</a>
+                        <a href="#contacto" class="bg-gradient-to-r from-brand-blue to-purple-600 text-white px-6 py-2 rounded-full font-bold hover:shadow-lg transition transform hover:-translate-y-0.5 text-sm border border-white/10">
+                            Crear Invitación
+                        </a>
+                    </div>
+                    <div class="md:hidden flex items-center">
+                        <button id="mobile-menu-btn" class="text-white hover:text-brand-blue focus:outline-none">
+                            <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden glass-nav border-t border-white/5 absolute w-full">
+                <div class="px-4 pt-4 pb-8 space-y-2">
+                    <a href="#como-funciona" class="block px-3 py-3 font-bold text-slate-300 hover:text-white">CÓMO FUNCIONA</a>
+                    <a href="#ejemplos" class="block px-3 py-3 font-bold text-slate-300 hover:text-white">EJEMPLOS</a>
+                    <a href="#precios" class="block px-3 py-3 font-bold text-slate-300 hover:text-white">PRECIOS</a>
+                    <a href="#contacto" class="block w-full text-center mt-6 bg-brand-blue text-white px-4 py-3 rounded-xl font-bold">Empieza Ahora</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- HERO SECTION -->
+        <header class="pt-28 pb-20 lg:pt-40 lg:pb-32 relative overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-brand-blue/20 blur-[100px] rounded-full pointer-events-none"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
+                    
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="lg:col-span-7 reveal active flex flex-col justify-center h-full pt-4">
+                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-brand-orange font-bold text-xs mb-6 w-fit backdrop-blur-sm">
+                            <span class="animate-pulse">●</span> TENDENCIA 2024
+                        </div>
+                        
+                        <h1 class="text-4xl md:text-5xl lg:text-7xl font-extrabold leading-tight mb-6 tracking-tight">
+                            Invitaciones que <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue via-purple-500 to-brand-orange glow-text">
+                                Enamoran
+                            </span>
+                        </h1>
+                        
+                        <p class="text-base md:text-lg text-slate-400 mb-8 lg:mb-10 leading-relaxed max-w-2xl font-light">
+                            Crea experiencias web interactivas con mapas GPS, confirmación por WhatsApp y galerías en vivo. Elige tu estilo:
+                        </p>
+
+                        <!-- SELECTOR DE TEMAS (ADAPTATIVO) -->
+                        <div class="flex flex-row md:grid md:grid-cols-1 gap-3 md:gap-4 w-full max-w-lg mb-8 md:mb-10 overflow-x-auto pb-4 md:pb-0 no-scrollbar snap-x">
+                            
+                            <!-- Card Boda -->
+                            <div class="selector-card active group min-w-[120px] md:min-w-0 flex-1 flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-4 p-3 md:p-4 rounded-2xl bg-white/5 border border-white/10 snap-center text-center md:text-left" onclick="changeDemo('boda')" id="sel-boda">
+                                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-yellow-100 to-yellow-400 flex items-center justify-center text-slate-900 shadow-lg shrink-0">
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                                </div>
+                                <div class="flex flex-col justify-center">
+                                    <h3 class="font-bold text-white text-xs md:text-lg leading-tight">Boda Elegante</h3>
+                                    <p class="text-slate-400 text-xs hidden md:block mt-1">Diseño "Golden Chapter": RSVP, Uber y Regalos.</p>
+                                </div>
+                                <div class="hidden md:block ml-auto text-brand-blue opacity-0 transition-opacity check-icon">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                            </div>
+
+                            <!-- Card XV Años -->
+                            <div class="selector-card group min-w-[120px] md:min-w-0 flex-1 flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-4 p-3 md:p-4 rounded-2xl bg-transparent border border-transparent snap-center text-center md:text-left" onclick="changeDemo('xv')" id="sel-xv">
+                                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                </div>
+                                <div class="flex flex-col justify-center">
+                                    <h3 class="font-bold text-white text-xs md:text-lg leading-tight">XV Festival</h3>
+                                    <p class="text-slate-400 text-xs hidden md:block mt-1">Diseño "Euphoria": Video background y Lineup.</p>
+                                </div>
+                                <div class="hidden md:block ml-auto text-brand-blue opacity-0 transition-opacity check-icon">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                            </div>
+
+                            <!-- Card Cumpleaños -->
+                            <div class="selector-card group min-w-[120px] md:min-w-0 flex-1 flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-4 p-3 md:p-4 rounded-2xl bg-transparent border border-transparent snap-center text-center md:text-left" onclick="changeDemo('cumple')" id="sel-cumple">
+                                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-brand-orange to-red-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M21 21v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7h18zm-3-9v-2a2 2 0 00-2-2H8a2 2 0 00-2 2v2h12z"/></svg>
+                                </div>
+                                <div class="flex flex-col justify-center">
+                                    <h3 class="font-bold text-white text-xs md:text-lg leading-tight">Cumple 30</h3>
+                                    <p class="text-slate-400 text-xs hidden md:block mt-1">Diseño "Rooftop": Dark mode y Calendar.</p>
+                                </div>
+                                <div class="hidden md:block ml-auto text-brand-blue opacity-0 transition-opacity check-icon">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: Mockup Phone (COMPLETO INTERACTIVO) -->
+                    <div class="lg:col-span-5 flex justify-center lg:justify-end reveal" style="transition-delay: 200ms;">
+                        <div class="relative group perspective-1000 mt-8 lg:mt-0">
+                            <div id="phone-glow" class="absolute -inset-4 bg-gradient-to-r from-brand-blue to-purple-600 rounded-[3rem] blur-3xl opacity-40 transition duration-500"></div>
+                            
+                            <div class="relative w-[320px] h-[650px] bg-slate-900 rounded-[3rem] p-3 border-[8px] border-slate-800 shadow-2xl transition duration-500 z-10">
+                                <!-- Notch -->
+                                <div class="absolute top-0 left-1/2 -translate-x-1/2 h-7 w-36 bg-slate-800 rounded-b-xl z-20 pointer-events-none flex justify-center items-center">
+                                    <div class="w-16 h-1 bg-slate-700 rounded-full opacity-50"></div>
+                                </div>
+                                
+                                <!-- SCREEN CONTAINER -->
+                                <div class="h-full w-full bg-slate-900 rounded-[2.5rem] overflow-hidden relative">
+                                    
+                                    <!-- 1. DEMO BODA -->
+                                    <div id="slide-boda" class="phone-slide phone-scroll active bg-[#fdfbf7] invitation-body">
+                                        <div class="relative h-80 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1511285560982-1351cdeb9821?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80');">
+                                            <div class="absolute inset-0 bg-black/20"></div>
+                                            <div class="absolute bottom-6 w-full text-center text-white">
+                                                <p class="font-elegant text-4xl mb-1">Nuestra Boda</p>
+                                                <h2 class="font-editorial text-3xl uppercase tracking-widest">Sofía & Mateo</h2>
+                                            </div>
+                                        </div>
+                                        <div class="px-6 py-8 text-center">
+                                            <p class="font-editorial text-sm text-slate-500 uppercase tracking-[0.2em] mb-6">24 • OCT • 2024</p>
+                                            <div class="flex justify-center gap-4 mb-8">
+                                                <div class="border border-slate-200 p-2 min-w-[50px] rounded"><span class="block font-editorial text-xl font-bold">12</span><span class="text-[9px] uppercase text-slate-400">Días</span></div>
+                                                <div class="border border-slate-200 p-2 min-w-[50px] rounded"><span class="block font-editorial text-xl font-bold">04</span><span class="text-[9px] uppercase text-slate-400">Hrs</span></div>
+                                                <div class="border border-slate-200 p-2 min-w-[50px] rounded"><span class="block font-editorial text-xl font-bold">35</span><span class="text-[9px] uppercase text-slate-400">Min</span></div>
+                                            </div>
+                                            <p class="font-light text-slate-600 text-sm mb-8 leading-relaxed">Tenemos el honor de invitarte a celebrar el comienzo de nuestra nueva vida juntos.</p>
+                                            <a href="https://wa.me/?" target="_blank" class="block w-full bg-slate-900 text-white py-3 rounded-none font-editorial uppercase text-xs tracking-widest hover:bg-slate-800 transition mb-8">Confirmar Asistencia</a>
+                                            <div class="space-y-6 text-left border-l border-slate-200 ml-4 pl-6 relative">
+                                                <div class="relative">
+                                                    <div class="absolute -left-[29px] top-1 w-2 h-2 bg-slate-900 rounded-full"></div>
+                                                    <p class="font-bold font-editorial text-slate-900">Ceremonia Religiosa</p>
+                                                    <p class="text-xs text-slate-500 mb-1">16:00 HRS • Catedral Metropolitana</p>
+                                                    <a href="https://goo.gl/maps" target="_blank" class="text-[10px] uppercase font-bold text-brand-orange border-b border-brand-orange">Ver Mapa</a>
+                                                </div>
+                                                <div class="relative">
+                                                    <div class="absolute -left-[29px] top-1 w-2 h-2 bg-slate-900 rounded-full"></div>
+                                                    <p class="font-bold font-editorial text-slate-900">Recepción</p>
+                                                    <p class="text-xs text-slate-500 mb-1">19:00 HRS • Hacienda Los Arcos</p>
+                                                    <a href="https://waze.com" target="_blank" class="text-[10px] uppercase font-bold text-brand-orange border-b border-brand-orange">Ir con Waze</a>
+                                                </div>
+                                            </div>
+                                            <div class="h-10"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. DEMO XV -->
+                                    <div id="slide-xv" class="phone-slide phone-scroll bg-[#0f0518] text-white invitation-body">
+                                        <div class="relative h-96 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80');">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-[#0f0518] via-purple-900/20 to-transparent"></div>
+                                            <div class="absolute bottom-4 left-0 w-full text-center px-4">
+                                                <h1 class="font-script text-6xl text-fuchsia-400 drop-shadow-[0_0_10px_rgba(232,121,249,0.8)]">Valentina</h1>
+                                                <p class="font-condensed text-2xl tracking-widest text-white mt-[-10px]">XV FEST</p>
+                                            </div>
+                                        </div>
+                                        <div class="px-5">
+                                            <a href="https://calendar.google.com" target="_blank" class="flex items-center justify-center gap-2 w-full bg-white/10 backdrop-blur border border-white/20 py-3 rounded-xl mb-8 hover:bg-white/20 transition">
+                                                <span class="text-xs font-bold uppercase">Agendar 15 AGO</span>
+                                            </a>
+                                            <h3 class="font-condensed text-xl text-fuchsia-400 mb-3 border-b border-fuchsia-900 pb-1">THE SQUAD</h3>
+                                            <div class="flex gap-3 overflow-x-auto pb-4 mb-6 no-scrollbar">
+                                                <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100" class="w-16 h-16 rounded-full border-2 border-fuchsia-500 object-cover">
+                                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" class="w-16 h-16 rounded-full border-2 border-fuchsia-500 object-cover">
+                                                <img src="https://images.unsplash.com/photo-1531891437567-31d445379131?w=100" class="w-16 h-16 rounded-full border-2 border-fuchsia-500 object-cover">
+                                            </div>
+                                            <div class="bg-gradient-to-r from-purple-900 to-fuchsia-900 p-4 rounded-xl mb-6 flex justify-between items-center">
+                                                <div>
+                                                    <p class="text-xs text-purple-200 uppercase font-bold">Location</p>
+                                                    <p class="font-condensed text-xl">Salón "Glow"</p>
+                                                </div>
+                                                <a href="https://waze.com" target="_blank" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-purple-900">
+                                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                                </a>
+                                            </div>
+                                            <a href="https://wa.me/?" target="_blank" class="block w-full text-center bg-white text-black font-black uppercase italic py-4 rounded-xl hover:scale-105 transition">Confirmar Asistencia</a>
+                                            <div class="h-10"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. DEMO CUMPLE -->
+                                    <div id="slide-cumple" class="phone-slide phone-scroll bg-white invitation-body">
+                                        <div class="bg-black text-white p-6 pt-12 rounded-b-[3rem] text-center relative overflow-hidden mb-6">
+                                            <div class="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                                            <div class="relative z-10">
+                                                <p class="font-condensed text-xl tracking-[0.5em] text-yellow-400 mb-2">SATURDAY NIGHT</p>
+                                                <h1 class="font-condensed text-7xl leading-none mb-2">LEO<br>30TH</h1>
+                                                <div class="inline-block bg-yellow-400 text-black font-bold px-4 py-1 text-sm -rotate-3 mt-2">#LeoDirty30</div>
+                                            </div>
+                                        </div>
+                                        <div class="px-6 text-center">
+                                            <p class="font-bold text-xl mb-1">Terraza Roma</p>
+                                            <p class="text-sm text-gray-500 mb-6">Av. Álvaro Obregón 100, CDMX</p>
+                                            <div class="w-full h-32 bg-gray-200 rounded-xl mb-6 relative overflow-hidden group cursor-pointer">
+                                                <div class="absolute inset-0 bg-cover bg-center grayscale group-hover:grayscale-0 transition duration-500" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Google_Maps_Logo_2020.svg/1024px-Google_Maps_Logo_2020.svg.png'); background-size: 50px; background-repeat: no-repeat;"></div>
+                                                <a href="https://goo.gl/maps" target="_blank" class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-transparent transition">
+                                                    <span class="bg-white px-3 py-1 rounded shadow text-xs font-bold">Ver Mapa</span>
+                                                </a>
+                                            </div>
+                                            <a href="https://wa.me/?" target="_blank" class="block w-full bg-yellow-400 text-black font-black py-4 rounded-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">CONFIRMAR ASISTENCIA</a>
+                                            <div class="h-10"></div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CARACTERÍSTICAS (Grid Bento) -->
+        <section id="como-funciona" class="py-24 relative overflow-hidden">
+            <div class="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-brand-blue/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-16 reveal">
+                    <div class="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-brand-orange font-bold text-xs mb-4">
+                        ✨ EXPERIENCIA VIP
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-bold mb-4">Mucho más que una invitación. <br><span class="text-slate-500">Una experiencia completa.</span></h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- 1. Confirmación WhatsApp -->
+                    <div class="lg:col-span-2 glass-card p-8 rounded-3xl hover:bg-white/5 transition duration-300 group reveal border border-green-500/20">
+                         <div class="flex items-start justify-between mb-6">
+                            <div class="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center text-green-400 group-hover:bg-green-500 group-hover:text-black transition-colors">
+                                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.017-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+                            </div>
+                            <span class="text-xs font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">RSVP INTELIGENTE</span>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-2 text-white">Confirmación Instantánea</h3>
+                        <p class="text-slate-400 text-sm mb-4">Tus invitados confirman con un clic y recibes la lista en tu celular.</p>
+                    </div>
+
+                    <!-- 2. Ubicación GPS -->
+                    <div class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition duration-300 group reveal" style="transition-delay: 100ms;">
+                         <div class="flex -space-x-2 mb-6">
+                            <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center border-2 border-slate-900 z-30 shadow-lg"><span class="text-[10px] font-bold text-white">Waze</span></div>
+                            <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center border-2 border-slate-900 z-20 shadow-lg"><span class="text-[10px] font-bold text-white">Maps</span></div>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Ubicación GPS</h3>
+                        <p class="text-slate-400 text-sm">Botones directos a Waze y Google Maps.</p>
+                    </div>
+
+                    <!-- 3. Mesa de Regalos -->
+                    <div class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition duration-300 group reveal" style="transition-delay: 200ms;">
+                        <div class="w-12 h-12 bg-pink-500/20 rounded-2xl flex items-center justify-center text-pink-400 mb-4">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Mesa de Regalos</h3>
+                        <p class="text-slate-400 text-xs mb-3">Compatible con Liverpool, Amazon, Palacio...</p>
+                    </div>
+
+                    <!-- 4. Galería Colaborativa -->
+                    <div class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition duration-300 group reveal" style="transition-delay: 300ms;">
+                        <div class="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-4 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Galería en Vivo</h3>
+                        <p class="text-slate-400 text-sm">Tus invitados pueden subir sus fotos y videos del evento.</p>
+                    </div>
+
+                    <!-- 5. Countdown & Calendario -->
+                    <div class="lg:col-span-2 glass-card p-8 rounded-3xl hover:bg-white/5 transition duration-300 group reveal border border-brand-blue/20 flex flex-col md:flex-row items-center gap-6">
+                        <div class="flex-1 text-center md:text-left">
+                            <h3 class="text-2xl font-bold mb-2 text-white">Countdown + Calendario</h3>
+                            <p class="text-slate-400 text-sm">Genera emoción con la cuenta regresiva y permite agendar en Google Calendar o Outlook.</p>
+                        </div>
+                        <div class="flex gap-2 text-center bg-black/40 p-4 rounded-xl border border-white/5 shadow-inner">
+                            <div><div class="text-xl font-bold text-white font-mono">15</div><div class="text-[10px] text-slate-500">DÍAS</div></div>
+                            <div class="text-slate-600">:</div>
+                            <div><div class="text-xl font-bold text-white font-mono">08</div><div class="text-[10px] text-slate-500">HRS</div></div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Música de Fondo -->
+                     <div class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition duration-300 group reveal" style="transition-delay: 400ms;">
+                        <div class="w-12 h-12 bg-red-500/20 rounded-2xl flex items-center justify-center text-red-400 mb-4">
+                             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2 text-white">Música</h3>
+                        <p class="text-slate-400 text-sm">La canción de tu evento sonando de fondo.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GALERÍA / EJEMPLOS -->
+        <section id="ejemplos" class="py-24 relative overflow-hidden">
+            <div class="absolute inset-0 bg-brand-blue/5 -skew-y-3 transform origin-top-left scale-110"></div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-16 reveal">
+                    <div>
+                        <span class="text-brand-orange font-bold uppercase tracking-widest text-xs mb-2 block">Inspiración</span>
+                        <h2 class="text-4xl font-bold">Ejemplos Reales</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 perspective-1000">
+                    <!-- BODA -->
+                    <div class="group relative rounded-3xl overflow-hidden aspect-[4/5] cursor-pointer border border-white/10 reveal hover:shadow-2xl hover:shadow-brand-blue/30 transition-all duration-500 transform hover:-translate-y-2">
+                        <div class="absolute top-4 right-4 z-20 bg-brand-orange text-black text-xs font-bold px-3 py-1 rounded-full animate-pulse-slow">
+                            🔥 MÁS POPULAR
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-8">
+                            <p class="text-brand-orange text-xs font-bold uppercase tracking-wider mb-2">Bodas</p>
+                            <h3 class="text-2xl font-bold text-white mb-4 transform group-hover:translate-x-2 transition-transform">Royal Garden</h3>
+                        </div>
+                    </div>
+
+                    <!-- CUMPLEAÑOS -->
+                    <div class="group relative rounded-3xl overflow-hidden aspect-[4/5] cursor-pointer border border-white/10 reveal hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-500 transform hover:-translate-y-2" style="transition-delay: 100ms;">
+                        <div class="absolute top-4 right-4 z-20 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            ✨ TRENDING
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-8">
+                            <p class="text-brand-blue text-xs font-bold uppercase tracking-wider mb-2">Cumpleaños</p>
+                            <h3 class="text-2xl font-bold text-white mb-4 transform group-hover:translate-x-2 transition-transform">Neon Night</h3>
+                        </div>
+                    </div>
+
+                    <!-- XV AÑOS -->
+                    <div class="group relative rounded-3xl overflow-hidden aspect-[4/5] cursor-pointer border border-white/10 reveal hover:shadow-2xl hover:shadow-pink-500/30 transition-all duration-500 transform hover:-translate-y-2" style="transition-delay: 200ms;">
+                        <img src="https://images.unsplash.com/photo-1530103862676-de3c9da59af7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover transition duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-8">
+                            <p class="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">XV Años</p>
+                            <h3 class="text-2xl font-bold text-white mb-4 transform group-hover:translate-x-2 transition-transform">Galaxy Dream</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+         <!-- PRECIOS -->
+        <section id="precios" class="py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20 reveal">
+                    <h2 class="text-4xl font-bold mb-4">Precios Claros.</h2>
+                    <p class="text-slate-400">Un solo pago por evento.</p>
+                </div>
+                <div class="flex justify-center">
+                    <div class="glass-card rounded-3xl p-8 max-w-md w-full">
+                        <h3 class="text-xl font-bold text-white">Paquete Todo Incluido</h3>
+                        <p class="text-4xl font-bold text-brand-orange my-4">$499 <span class="text-sm text-slate-400">MXN</span></p>
+                        <ul class="text-slate-300 text-sm space-y-2 mb-6">
+                            <li>✓ Plantilla Premium</li>
+                            <li>✓ WhatsApp RSVP</li>
+                            <li>✓ Mapas GPS</li>
+                            <li>✓ Galería de Fotos</li>
+                        </ul>
+                         <a href="#contacto" class="block w-full py-4 rounded-xl bg-brand-blue text-white text-center font-bold">Pedir Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer id="contacto" class="bg-black text-slate-400 py-16 border-t border-white/10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid md:grid-cols-4 gap-12">
+                    <div class="col-span-1 md:col-span-2">
+                        <!-- LOGO FOOTER -->
+                        <div class="mb-8 w-56 opacity-80 hover:opacity-100 transition">
+                             <svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+                                <g transform="translate(50, 20)">
+                                    <path d="M10,10 L30,70 L45,45 L70,30 Z" fill="#2563eb" stroke="transparent"/>
+                                    <g transform="translate(10, 10)">
+                                        <path d="M-3,-6 L-6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <path d="M-6,-3 L-12,-6" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <path d="M3,-6 L6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+                                        <circle cx="-9" cy="-9" r="2" fill="#f59e0b" />
+                                    </g>
+                                </g>
+                                <g transform="translate(130, 85)">
+                                    <text font-family="sans-serif" font-weight="800" font-size="44" fill="white" letter-spacing="-1">fiesteala</text>
+                                    <circle cx="182" cy="-5" r="4.5" fill="#2563eb" />
+                                    <text x="188" y="0" font-family="sans-serif" font-weight="400" font-size="24" fill="#2563eb">com</text>
+                                </g>
+                            </svg>
+                        </div>
+                        <p class="mb-8 max-w-sm font-light">Creamos el estándar de invitaciones digitales para la nueva generación de anfitriones.</p>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center hover:bg-brand-blue hover:text-white transition border border-white/10">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
+                            </a>
+                            <a href="#" class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center hover:bg-pink-600 hover:text-white transition border border-white/10">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold mb-6 tracking-wide text-sm uppercase">Compañía</h3>
+                        <ul class="space-y-3 font-light text-sm">
+                            <li><a href="#" class="hover:text-brand-blue transition">Sobre Nosotros</a></li>
+                            <li><a href="#" class="hover:text-brand-blue transition">Empleos</a></li>
+                            <li><a href="#" class="hover:text-brand-blue transition">Blog</a></li>
+                            <li><a href="#" class="hover:text-brand-blue transition">Prensa</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold mb-6 tracking-wide text-sm uppercase">Soporte</h3>
+                        <ul class="space-y-3 font-light text-sm">
+                            <li><a href="#" class="hover:text-brand-blue transition">Centro de Ayuda</a></li>
+                            <li><a href="#" class="hover:text-brand-blue transition">Términos y Condiciones</a></li>
+                            <li><a href="#" class="hover:text-brand-blue transition">Privacidad</a></li>
+                            <li>hola@fiesteala.com</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="border-t border-white/10 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center text-xs font-light">
+                    <p>&copy; 2023 Fiesteala.com. Hecho con ❤️ en México.</p>
+                    <div class="flex space-x-6 mt-4 md:mt-0">
+                        <a href="#" class="hover:text-white">Twitter</a>
+                        <a href="#" class="hover:text-white">Instagram</a>
+                        <a href="#" class="hover:text-white">LinkedIn</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </div> <!-- FIN LANDING PAGE -->
+
+    <!-- SCRIPTS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for invitation URL param on load
+            checkForInvitationLink();
+
+            // LOGO ANIMATION
+            const logos = document.querySelectorAll('.logo-animatable');
+            function animateLogos() {
+                if(logos.length === 0) return;
+                logos.forEach(logo => logo.classList.add('animating'));
+                setTimeout(() => {
+                    logos.forEach(logo => logo.classList.remove('animating'));
+                    setTimeout(animateLogos, 5000); 
+                }, 600); 
+            }
+            setTimeout(animateLogos, 1000);
+            logos.forEach(logo => {
+                logo.addEventListener('click', () => {
+                    if (!logo.classList.contains('animating')) {
+                        logo.classList.add('animating');
+                        setTimeout(() => logo.classList.remove('animating'), 600);
+                    }
+                });
+            });
+
+            // MOBILE MENU
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            btn.addEventListener('click', () => {
+                menu.classList.toggle('hidden');
+            });
+
+            // SCROLL REVEAL
+            const revealElements = document.querySelectorAll('.reveal');
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { root: null, threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+            revealElements.forEach(el => revealObserver.observe(el));
+        });
+
+        // --- PHONE MOCKUP DEMO LOGIC ---
+        function changeDemo(type) {
+            document.querySelectorAll('.phone-slide').forEach(el => { el.classList.remove('active'); el.scrollTop = 0; });
+            document.querySelectorAll('.selector-card').forEach(el => {
+                el.classList.remove('active', 'bg-white/5'); el.classList.add('bg-transparent');
+                const icon = el.querySelector('.check-icon'); if(icon) icon.style.opacity = '0';
+            });
+            document.getElementById('slide-' + type).classList.add('active');
+            const activeCard = document.getElementById('sel-' + type);
+            activeCard.classList.add('active', 'bg-white/5');
+            activeCard.classList.remove('bg-transparent');
+            const activeIcon = activeCard.querySelector('.check-icon');
+            if(activeIcon) activeIcon.style.opacity = '1';
+
+            const glow = document.getElementById('phone-glow');
+            if(type === 'boda') glow.className = 'absolute -inset-4 bg-gradient-to-r from-brand-blue to-purple-600 rounded-[3rem] blur-3xl opacity-40 transition duration-500';
+            else if (type === 'xv') glow.className = 'absolute -inset-4 bg-gradient-to-r from-purple-600 to-pink-500 rounded-[3rem] blur-3xl opacity-60 transition duration-500';
+            else glow.className = 'absolute -inset-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-[3rem] blur-3xl opacity-50 transition duration-500';
+        }
+
+        // --- CLIENT VIEW ROUTER LOGIC (URL LIMPIA) ---
+        function checkForInvitationLink() {
+            // Estrategia: Buscar en la ruta (URL Limpia: dominio.com/slug)
+            let inviteSlug = null;
+            
+            // Dividimos el path y tomamos el último segmento
+            // Filtramos 'index.html' por si se está ejecutando localmente o en ciertos servidores
+            const pathSegments = window.location.pathname.split('/').filter(segment => segment.length > 0 && segment !== 'index.html');
+            
+            if (pathSegments.length > 0) {
+                // Asumimos que el último segmento es el slug de la invitación
+                // Ej: fiesteala.com/boda-sofia -> boda-sofia
+                inviteSlug = pathSegments[pathSegments.length - 1];
+            }
+
+            if (inviteSlug) {
+                // Intentar recuperar del localStorage (Simulación de base de datos)
+                const savedHtml = localStorage.getItem(`fiesteala_invite_${inviteSlug}`);
+                
+                if (savedHtml) {
+                    // Ocultar Landing Page
+                    document.getElementById('landing-page').style.display = 'none';
+                    document.body.style.overflow = 'hidden'; 
+
+                    // Mostrar Contenedor Cliente e Inyectar HTML
+                    const clientContainer = document.getElementById('client-view-container');
+                    clientContainer.style.display = 'block';
+                    clientContainer.innerHTML = savedHtml;
+                } else {
+                    // Si no encuentra la invitación, no hace nada y muestra la landing page normal
+                    // Esto maneja el caso de la raíz "fiesteala.com/" o rutas inválidas
+                    console.log("No se encontró invitación para: " + inviteSlug);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
