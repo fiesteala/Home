@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panel Inteligente Fiesteala</title>
+    
+    <!-- METATAGS PARA WHATSAPP Y REDES SOCIALES -->
+    <meta property="og:title" content="Invitación al Evento">
+    <meta property="og:description" content="¡Tienes una invitación especial! Toca el enlace para ver tu acceso.">
+    <meta property="og:image" id="metaOgImage" content="">
+    <meta property="og:type" content="website">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','sans-serif'],mono:['Courier Prime','monospace']}}}}</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        const $=id=>document.getElementById(id), $$=sel=>document.querySelectorAll(sel);
+        const toggle=(id,f)=>$(id)?.classList.toggle('hidden',!f), show=id=>$(id)?.classList.remove('hidden'), hide=id=>$(id)?.classList.add('hidden');
+        window.addEventListener('DOMContentLoaded', () => {
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches || new Date().getHours() >= 19 || new Date().getHours() < 6;
+            ['adminPanel','loginModal','addGuestModal','qrPreviewModal','guestDetailModal','wendyPlannerApp','checkinModal','configModal','initialSetupModal','tableConfigModal','tableWarningModal','editTableModal','sysModal','aaResultModal','editGuestTableModal','editGuestPaxModal','editObjectModal','wpInstructionsModal'].forEach(id=>$(id)?.classList.toggle('dark', isDark));
+        });
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, onSnapshot, deleteDoc, doc, query, orderBy, updateDoc, getDoc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        const fc = {
+            apiKey: "AIzaSyBhPNE_MBuofjgsDNGNWKt8CBtBAKZfQCc",
+            authDomain: "panel-de-control-intelig-db278.firebaseapp.com",
+            projectId: "panel-de-control-intelig-db278",
+            storageBucket: "panel-de-control-intelig-db278.firebasestorage.app",
+            messagingSenderId: "950669155809",
+            appId: "1:950669155809:web:f49085e386dacb6a0446a0"
+        };
+        
+        const appId = 'evento_demo_01'; 
+        
+        if(Object.keys(fc).length){
+            const app=initializeApp(fc), auth=getAuth(app), db=getFirestore(app);
+            window.Object.assign(window, {db, collection, addDoc, setDoc, updateDoc, getDoc, onSnapshot, deleteDoc, doc, appId, auth, query, orderBy, limit, signInAnonymously});
+            (async()=>{try{if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token);else await signInAnonymously(auth)}catch(e){window.isAuthReady=true;}})();
+            onAuthStateChanged(auth, u=>{window.isAuthReady=true; if(!$('adminPanel').classList.contains('translate-y-full')) window.loadAdminData(); if(!$('wendyPlannerApp').classList.contains('translate-y-full')) window.loadAdminData(); });
+        }
+    </script>
+    <style>
+        .logo-container{width:100%;max-width:150px;display:block}@keyframes click-press{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(0.92) rotate(-2deg)}}@keyframes confetti-pop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}@keyframes dot-beat{0%,100%{transform:scale(1)}50%{transform:scale(1.4);fill:#2563eb}}.cursor-icon,.spark-group,.dot-icon{transform-origin:center;transform-box:fill-box;transition:transform .5s ease}.animating .cursor-icon{animation:click-press .6s ease-in-out forwards}.animating .spark-group{animation:confetti-pop .6s cubic-bezier(0.175,.885,.32,1.275) forwards}.animating .dot-icon{animation:dot-beat .6s ease-in-out forwards}.admin-theme{font-family:'Inter',sans-serif}
+        
+        /* Ajuste de pantalla completa para móviles ignorando barras del navegador */
+        #adminPanel,#wendyPlannerApp{transition:transform .3s cubic-bezier(.4,0,.2,1);}
+        
+        .admin-scroll::-webkit-scrollbar{width:6px;height:6px}.admin-scroll::-webkit-scrollbar-track{background:transparent}.admin-scroll::-webkit-scrollbar-thumb{background-color:#cbd5e1;border-radius:10px}@media(prefers-color-scheme:dark){.admin-scroll::-webkit-scrollbar-thumb{background-color:#475569}}.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+        
+        /* Permite scroll nativo fluido en el mapa */
+        #venueCanvas, #wpVenueCanvas{overflow:visible;position:relative;margin:auto;transform-origin:center top;}
+        
+        /* Bloqueo de selección de texto en mapas */
+        .no-select { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        
+        .main-floor-render{position:absolute;background-color:rgba(255,255,255,0.9);border:dashed #3b82f6;border-radius:2px;box-sizing:border-box;}
+        .dark .main-floor-render{background-color:rgba(30,41,59,0.9);border-color:#60a5fa;}
+        .main-floor-render.static-mode {background: none !important; border: none !important; box-shadow: none !important; background-image: none !important;}
+        .main-floor-render.static-mode span {opacity: 0; pointer-events: none;}
+        
+        .draggable-table,.draggable-object{position:absolute;z-index:60;transition:transform .1s}.draggable-object{z-index:30}.is-dragging{z-index:110!important;transform:scale(1.05);filter:drop-shadow(0 10px 8px rgba(0,0,0,.2))}
+        /* Habilitar touch action SOLO si estamos arrastrando activamente, de lo contrario auto para scroll */
+        .cursor-move { touch-action: none; }
+        
+        .chair-tiffany{position:absolute;transition:all .3s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:51}.chair-seat{width:100%;height:100%;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,.2);position:relative;z-index:10;border:1px solid rgba(0,0,0,.2)}.chair-back{position:absolute;width:110%;height:30%;background:rgba(0,0,0,.3);border-radius:2px;z-index:20;border:1px solid rgba(0,0,0,.1);bottom:105%}
+        .table-cloth-base{position:absolute;inset:0;border-radius:inherit;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);transition:background-color .3s;z-index:30}.table-cloth-overlay{position:absolute;inset:0;margin:auto;transition:all .3s;opacity:.9;box-shadow:0 2px 4px rgba(0,0,0,.1);z-index:31}
+        .venue-object{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;text-align:center;overflow:hidden;border:1px solid rgba(0,0,0,.1);box-shadow:0 4px 6px rgba(0,0,0,.1);z-index:40}.led-floor{background-image:linear-gradient(45deg,#f00 25%,#0f0 25%,#0f0 50%,#00f 50%,#00f 75%,#ff0 75%,#ff0 100%);background-size:20px 20px;opacity:.8}.pool-water{background-image:radial-gradient(circle,#0ea5e9 20%,#0284c7 80%);opacity:.9}.grass-texture{background-color:#4ade80;background-image:radial-gradient(#22c55e 1px,transparent 1px);background-size:10px 10px}
+        @media print{body>*:not(#printableArea){display:none!important}#printableArea{display:block!important;width:100%;background:#fff!important}@page{size:letter;margin:.5cm}}
+        .dropdown-content{display:none;position:absolute;right:0;background-color:#fff;min-width:160px;box-shadow:0 8px 16px 0 rgba(0,0,0,.2);z-index:200;border-radius:.5rem;overflow:hidden}.dark .dropdown-content{background-color:#1e293b;border:1px solid #334155}.dropdown-content button{color:#000;padding:12px 16px;text-decoration:none;display:block;width:100%;text-align:left;font-size:.8rem}.dark .dropdown-content button{color:#e2e8f0}.dropdown-content button:hover{background-color:#f1f5f9}.dark .dropdown-content button:hover{background-color:#334155}.show{display:block}
+        .status-card-confirmed{border-left:4px solid #facc15;background:#fefce8}.status-card-checkedin{border-left:4px solid #4ade80;background:#f0fdf4}.dark .status-card-confirmed{background:rgba(113,63,18,.2);border-left-color:#eab308}.dark .status-card-checkedin{background:rgba(20,83,45,.2);border-left-color:#22c55e}
+        .color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid #e2e8f0;transition:transform .2s;box-shadow:0 2px 4px rgba(0,0,0,.1)}.color-swatch:hover{transform:scale(1.2);z-index:10;border-color:#94a3b8}.dark .color-swatch{border-color:#475569}
+        .zoom-controls{position:absolute;bottom:20px;right:20px;z-index:50;display:flex;flex-direction:column;gap:8px}.zoom-btn{width:40px;height:40px;border-radius:50%;background-color:#fff;color:#1e293b;box-shadow:0 4px 6px rgba(0,0,0,.1);display:flex;justify-content:center;align-items:center;font-size:1.2rem;cursor:pointer;transition:all .2s;border:1px solid #e2e8f0}.dark .zoom-btn{background-color:#1e293b;color:#fff;border-color:#334155}.zoom-btn:hover{transform:scale(1.1)}.zoom-btn:active{transform:scale(.95)}
+        
+        #reader { width: 100%; border: none !important; border-radius: 1.5rem; overflow: hidden; background: #000; }
+        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; border-radius: 1.5rem; aspect-ratio: 1 / 1; }
+        #reader__dashboard_section_csr { display: none !important; }
+        #reader__dashboard_section_swaplink { display: none !important; }
+        #reader__scan_region { background: #000; border-radius: 1.5rem;}
+        #reader__scan_region img { display: none !important; } 
+        
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="bg-gray-100 text-slate-800">
+    <div id="toastMsg" class="fixed top-5 left-1/2 -translate-x-1/2 z-[300] transform transition-all duration-300 -translate-y-32 opacity-0 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none"><span id="toastIcon"></span> <span id="toastText">Mensaje</span></div>
+    <main id="guestView" class="min-h-[100dvh] relative">
+        <div class="flex flex-col items-center justify-center h-[100dvh] text-center p-6 bg-white">
+            <div class="mb-6 opacity-50 grayscale hover:grayscale-0 transition duration-500 logo-container"><svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50, 20)"><path d="M10,10 L30,70 L45,45 L70,30 Z" fill="#2563eb" stroke="white" stroke-width="3" /><g transform="translate(10, 10)"><path d="M-3,-6 L-6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M-6,-3 L-12,-6" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M3,-6 L6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><circle cx="-9" cy="-9" r="2" fill="#f59e0b" /></g></g><g transform="translate(130, 85)"><text font-family="sans-serif" font-weight="800" font-size="44" fill="#1e293b" letter-spacing="-1">fiesteala</text><circle cx="182" cy="-5" r="4.5" fill="#2563eb" /><text x="188" y="0" font-family="sans-serif" font-weight="400" font-size="24" fill="#2563eb">com</text></g></svg></div>
+            <h1 class="text-2xl font-bold text-slate-800 mb-2">Panel Inteligente Listo</h1>
+            <p class="text-slate-500 max-w-md text-sm">Pega el código HTML de tu invitación dentro de la etiqueta <code class="bg-slate-100 px-2 py-1 rounded text-red-500 text-xs">&lt;main id="guestView"&gt;</code>.</p>
+            <button onclick="window.openAdminLogin()" class="mt-8 px-6 py-3 bg-slate-800 text-white rounded-full text-xs font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition shadow-lg">Probar Panel</button>
+        </div>
+        <div class="absolute bottom-4 left-0 w-full text-center pointer-events-none z-50"><button onclick="window.openAdminLogin()" class="text-slate-300 hover:text-slate-500 text-[10px] font-bold uppercase tracking-widest transition pointer-events-auto p-2">Panel de Control</button></div>
+    </main>
+    <div id="printableArea" class="hidden"></div><div id="qrGenContainer" class="hidden"></div>
+    <div id="sysModal" class="fixed inset-0 z-[350] hidden bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] w-full max-w-sm border border-slate-200 dark:border-slate-700 shadow-2xl animate__animated animate__zoomIn"><div id="sysModalIcon" class="text-center mb-4 text-5xl drop-shadow-md"></div><h3 id="sysModalTitle" class="text-xl font-black text-slate-800 dark:text-white text-center mb-2 leading-tight"></h3><p id="sysModalText" class="text-sm text-slate-500 dark:text-slate-400 text-center mb-8"></p><div id="sysModalActions" class="flex flex-col sm:flex-row gap-3 justify-center"></div></div></div>
+    <div id="loginModal" class="fixed inset-0 z-[60] hidden bg-slate-900/95 flex items-center justify-center px-4 backdrop-blur-md"><div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-2xl max-w-sm w-full relative admin-theme overflow-hidden border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn"><div class="mb-6 flex justify-center scale-90"><div class="logo-container svg-animate-target"><svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50, 20)"><path class="cursor-icon" d="M10,10 L30,70 L45,45 L70,30 Z" fill="#2563eb" stroke="white" stroke-width="3" /><g class="spark-group" transform="translate(10, 10)"><path d="M-3,-6 L-6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M-6,-3 L-12,-6" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M3,-6 L6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><circle cx="-9" cy="-9" r="2" fill="#f59e0b" /></g></g><g transform="translate(130, 85)"><text font-family="sans-serif" font-weight="800" font-size="44" class="fill-slate-800 dark:fill-white" letter-spacing="-1">fiesteala</text><circle class="dot-icon" cx="182" cy="-5" r="4.5" fill="#2563eb" /><text x="188" y="0" font-family="sans-serif" font-weight="400" font-size="24" fill="#2563eb">com</text></g></svg></div></div><p class="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center font-medium">Panel de Control Inteligente</p><input type="password" id="adminPassword" placeholder="PIN (1234)" class="w-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 p-4 rounded-xl mb-4 text-center text-lg tracking-widest outline-none focus:border-blue-500 dark:focus:border-blue-400 transition text-slate-800 dark:text-white"><button onclick="checkLogin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition shadow-lg shadow-blue-500/30">Acceder</button><button onclick="hide('loginModal')" class="w-full mt-4 text-slate-400 dark:text-slate-500 text-xs hover:text-slate-600 dark:hover:text-slate-300 font-semibold p-2">Cancelar</button></div></div>
+    
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" class="fixed inset-0 z-50 bg-[#f8fafc] dark:bg-slate-950 overflow-hidden transform translate-y-full admin-theme h-[100dvh] flex flex-col transition-transform duration-300">
+        <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 shrink-0 sticky top-0 z-[150] shadow-sm"><div class="relative flex items-center justify-center sm:justify-between h-14 sm:h-auto"><div class="flex flex-col sm:flex-row items-center gap-1 sm:gap-4"><div class="w-36 h-10 relative flex items-center justify-center"><div class="logo-container svg-animate-target w-full h-full"><svg viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50, 20)"><path class="cursor-icon" d="M10,10 L30,70 L45,45 L70,30 Z" fill="#2563eb" stroke="white" stroke-width="3" /><g class="spark-group" transform="translate(10, 10)"><path d="M-3,-6 L-6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M-6,-3 L-12,-6" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><path d="M3,-6 L6,-12" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" /><circle cx="-9" cy="-9" r="2" fill="#f59e0b" /></g></g><g transform="translate(130, 85)"><text font-family="sans-serif" font-weight="800" font-size="44" class="fill-slate-800 dark:fill-white" letter-spacing="-1">fiesteala</text><circle class="dot-icon" cx="182" cy="-5" r="4.5" fill="#2563eb" /><text x="188" y="0" font-family="sans-serif" font-weight="400" font-size="24" fill="#2563eb">com</text></g></svg></div></div><span class="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center sm:text-left leading-none">Panel de Control<br class="sm:hidden"> Inteligente</span></div><button onclick="closeAdmin()" class="absolute right-0 top-1/2 -translate-y-1/2 sm:static sm:translate-y-0 w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition shadow-sm active:scale-95"><i class="fas fa-times"></i></button></div></div>
+        <div class="flex-1 flex overflow-hidden"><div class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-slate-950 transition-colors duration-300"><div class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto hide-scrollbar touch-pan-x"><div class="flex px-4 sm:px-6 min-w-max"><button onclick="switchTab('guests')" id="tab-guests" class="py-4 px-4 sm:px-6 border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 font-bold text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800"><i class="fas fa-users text-lg sm:text-base"></i> <span class="hidden sm:inline whitespace-nowrap">Invitados</span></button><button onclick="switchTab('tables')" id="tab-tables" class="py-4 px-4 sm:px-6 border-b-2 border-transparent text-slate-500 dark:text-slate-400 font-medium text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800"><i class="fas fa-list text-lg sm:text-base"></i> <span class="hidden sm:inline whitespace-nowrap">Mesas</span></button><button onclick="switchTab('map')" id="tab-map" class="py-4 px-4 sm:px-6 border-b-2 border-transparent text-slate-500 dark:text-slate-400 font-medium text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800"><i class="fas fa-chair text-lg sm:text-base"></i> <span class="hidden sm:inline whitespace-nowrap">Mi Salón</span></button><button onclick="switchTab('planner')" id="tab-planner" class="py-4 px-4 sm:px-6 border-b-2 border-transparent text-slate-500 dark:text-slate-400 font-medium text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800"><i class="fas fa-qrcode text-lg sm:text-base"></i> <span class="hidden sm:inline whitespace-nowrap">Scanner / Cadenero</span></button></div></div>
+        
+        <!-- CONTENT AREA -->
+        <div class="flex-1 overflow-y-auto admin-scroll text-slate-800 dark:text-slate-200 h-full relative" id="tabContentArea">
+            
+            <div id="view-guests" class="p-3 md:p-6 space-y-4 md:space-y-6 pb-20"><div class="grid grid-cols-3 gap-2 sm:gap-4 mb-2"><div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center"><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total</span><span class="block text-xl sm:text-2xl font-black text-slate-800 dark:text-white" id="dashTotalGuests">0</span></div><div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-yellow-400"></div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Confirmados</span><span class="block text-xl sm:text-2xl font-black text-yellow-600 dark:text-yellow-400" id="dashConfirmed">0</span></div><div class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div><span class="block text-[10px] text-slate-400 uppercase font-bold tracking-wider">Ingresados</span><span class="block text-xl sm:text-2xl font-black text-green-600 dark:text-green-400" id="dashCheckedIn">0</span></div></div>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800" style="overflow: visible;"><div class="px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50"><h3 class="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wide mb-3">Gestión de Invitados</h3><div class="flex flex-wrap items-center gap-2 w-full mb-2"><button onclick="openAddGuestModal()" class="flex-1 md:flex-none flex items-center justify-center gap-2 text-blue-600 hover:text-blue-800 text-[11px] font-bold uppercase border border-blue-200 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300 active:scale-95 transition whitespace-nowrap"><i class="fas fa-plus"></i> <span class="hidden sm:inline">Nuevo</span></button><button onclick="generateWristbands()" class="flex-1 md:flex-none flex items-center justify-center gap-2 text-purple-600 hover:text-purple-800 text-[11px] font-bold uppercase border border-purple-200 px-3 py-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300 active:scale-95 transition whitespace-nowrap"><i class="fas fa-print"></i> <span class="hidden sm:inline">Pulseras</span></button><div class="relative flex-1 md:flex-none z-50"><button onclick="$('exportDropdown')?.classList.toggle('show')" class="w-full flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 text-[11px] font-bold uppercase border border-slate-200 dark:border-slate-600 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 active:scale-95 transition whitespace-nowrap"><i class="fas fa-file-export"></i> <span class="hidden sm:inline">Exportar</span></button><div id="exportDropdown" class="dropdown-content mt-1"><button onclick="exportData('xlsx')"><i class="fas fa-file-excel text-green-600 mr-2"></i> Excel</button><button onclick="exportData('pdf')"><i class="fas fa-file-pdf text-red-600 mr-2"></i> PDF</button></div></div><button onclick="openConfigModal()" class="flex-1 md:flex-none flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-800 text-[11px] font-bold uppercase border border-slate-200 dark:border-slate-700 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 active:scale-95 transition whitespace-nowrap"><i class="fas fa-image"></i> <span class="hidden sm:inline">Miniatura</span></button><div class="hidden md:flex flex-1 items-center gap-2 min-w-[200px]"><div class="relative flex-1"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i><input type="text" id="searchGuestInput" oninput="$('searchGuestInputMob').value=this.value; renderGuestList()" placeholder="Buscar invitado..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:border-blue-500 text-slate-800 dark:text-white transition shadow-sm h-[36px]"></div><select id="sortGuestSelect" onchange="$('sortGuestSelectMob').value=this.value; renderGuestList()" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-500 text-slate-800 dark:text-white font-bold shadow-sm cursor-pointer h-[36px]"><option value="newest">Recientes</option><option value="name">Nombre</option><option value="table">Mesa</option><option value="confirmed">Confirmados</option></select></div><button onclick="toggle('mobileSearchTools')" class="md:hidden flex-none w-[36px] h-[36px] flex items-center justify-center gap-1 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 active:scale-95 transition"><i class="fas fa-search"></i></button></div><div id="mobileSearchTools" class="hidden md:hidden flex flex-col gap-2 mt-3 p-3 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700"><div class="relative w-full"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" id="searchGuestInputMob" oninput="$('searchGuestInput').value=this.value; renderGuestList()" placeholder="Buscar por nombre..." class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none focus:border-blue-500 text-slate-800 dark:text-white shadow-sm"></div></div></div><div class="w-full overflow-x-auto"><div id="guestTableBody" class="flex flex-col w-full divide-y divide-slate-100 dark:divide-slate-800/50 min-w-[300px] md:min-w-[600px]"></div></div></div></div>
+            
+            <div id="view-tables" class="hidden p-3 md:p-6 space-y-6 pb-20"><div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 gap-4"><div class="w-full md:w-auto text-center md:text-left"><h3 class="font-bold text-slate-700 dark:text-slate-300">Gestión de Mesas y Acomodo</h3><p class="text-xs text-slate-400" id="tableStatsText">Calculando...</p></div><div class="flex flex-wrap gap-2 w-full md:w-auto"><button onclick="openTableConfigModal()" class="flex-1 md:flex-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"><i class="fas fa-cog"></i> Configurar</button><button onclick="emptyAllTables()" class="flex-1 md:flex-none bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 border border-orange-200 dark:border-orange-800 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"><i class="fas fa-user-slash"></i> Vaciar</button><button onclick="deleteAllTables()" class="flex-1 md:flex-none bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"><i class="fas fa-trash-alt"></i> Eliminar Todo</button><button onclick="autoAssignAll()" class="w-full md:w-auto bg-purple-600 text-white hover:bg-purple-700 px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"><i class="fas fa-magic"></i> Auto-Acomodo</button></div></div><div id="tablesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4"></div></div>
+            
+            <!-- MAPA EDGE TO EDGE -->
+            <div id="view-map" class="hidden absolute inset-0 z-20 flex flex-col pb-0 bg-slate-100 dark:bg-slate-950">
+                <!-- HEADER DE MAPA Y HERRAMIENTAS -->
+                <div class="bg-white dark:bg-slate-900 p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center z-[150] relative gap-3 shrink-0"><h3 class="font-bold text-slate-700 dark:text-slate-300 text-sm w-full sm:w-auto text-center sm:text-left"><i class="fas fa-chair mr-2 text-blue-500"></i> Plano Real</h3>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto pb-2 sm:pb-0 justify-center sm:justify-end">
+                        
+                        <!-- HERRAMIENTAS DE EDICION (OCULTAS POR DEFECTO) -->
+                        <div id="mapEditTools" class="hidden flex-wrap gap-2 items-center">
+                            <button onclick="openReconfigureModal()" class="whitespace-nowrap flex-none bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-2"><i class="fas fa-ruler-combined"></i> Medidas</button>
+                            <div class="relative">
+                                <button onclick="$('addObjDropdown')?.classList.toggle('show')" class="whitespace-nowrap flex-none bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-2"><i class="fas fa-cubes"></i> Objetos</button>
+                                <div id="addObjDropdown" class="dropdown-content mt-1 w-48 max-h-60 overflow-y-auto">
+                                    <button onclick="openEditObjectModal('new','pista')"><i class="fas fa-chess-board text-purple-500 mr-2"></i> Pista Baile</button><button onclick="openEditObjectModal('new','escenario')"><i class="fas fa-microphone-alt text-blue-500 mr-2"></i> Escenario</button><button onclick="openEditObjectModal('new','dj')"><i class="fas fa-music text-pink-500 mr-2"></i> DJ / Audio</button><button onclick="openEditObjectModal('new','barra')"><i class="fas fa-cocktail text-orange-500 mr-2"></i> Barra</button><button onclick="openEditObjectModal('new','mesa_honor')"><i class="fas fa-star text-yellow-500 mr-2"></i> Mesa Honor</button><button onclick="openEditObjectModal('new','entrada')"><i class="fas fa-door-open text-green-500 mr-2"></i> Entrada</button><button onclick="openEditObjectModal('new','bano')"><i class="fas fa-restroom text-cyan-500 mr-2"></i> Baños</button><button onclick="openEditObjectModal('new','deco')"><i class="fas fa-camera-retro text-rose-500 mr-2"></i> Decoración</button><button onclick="openEditObjectModal('new','brincolin')"><i class="fas fa-child text-orange-400 mr-2"></i> Brincolín</button><button onclick="openEditObjectModal('new','alberca')"><i class="fas fa-water text-blue-400 mr-2"></i> Alberca</button><button onclick="openEditObjectModal('new','jardin')"><i class="fas fa-tree text-green-600 mr-2"></i> Jardín</button><button onclick="openEditObjectModal('new','pinata')"><i class="fas fa-star text-yellow-500 mr-2"></i> Piñata</button><button onclick="openEditObjectModal('new','animacion')"><i class="fas fa-theater-masks text-purple-500 mr-2"></i> Animación</button><button onclick="openEditObjectModal('new','custom')"><i class="fas fa-square text-gray-500 mr-2"></i> Otro</button>
+                                </div>
+                            </div>
+                            <button onclick="openEditTableModal('new')" class="whitespace-nowrap flex-none bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 px-4 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-2"><i class="fas fa-plus"></i> Mesa</button>
+                            <button onclick="toggleMapEditMode(false)" class="whitespace-nowrap flex-none bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2"><i class="fas fa-check"></i> Listo</button>
+                        </div>
+                        
+                        <!-- BOTÓN ACTIVAR EDICIÓN (SIEMPRE VISIBLE SI NO ESTAMOS EDITANDO) -->
+                        <button id="btnEditarPlano" onclick="toggleMapEditMode(true)" class="whitespace-nowrap flex-none bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2"><i class="fas fa-edit"></i> Editar Plano</button>
+                        
+                        <button onclick="exportMapPdf()" class="whitespace-nowrap flex-none bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-900 px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg active:scale-95 flex items-center gap-2"><i class="fas fa-file-pdf"></i> PDF</button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 relative overflow-hidden">
+                    <div class="absolute inset-0 overflow-auto touch-pan-x touch-pan-y" id="mapScrollArea">
+                        <button id="saveFloorBtn" onclick="saveFloorLayout()" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-[160] bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold shadow-xl animate__animated animate__fadeInDown flex items-center gap-2 text-sm"><i class="fas fa-save"></i> Guardar Distribución</button>
+                        <div id="venueCanvas" class="no-select transition-all duration-100 ease-linear"></div>
+                    </div>
+                    
+                    <!-- ZOOM CONTROLS FIXED -->
+                    <div class="absolute bottom-6 right-6 z-50 flex flex-col gap-2">
+                        <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition hidden md:flex" onclick="zoomMap(0.1)"><i class="fas fa-plus"></i></button>
+                        <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition hidden md:flex" onclick="zoomMap(-0.1)"><i class="fas fa-minus"></i></button>
+                        <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 flex justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition" onclick="resetMapZoom()"><i class="fas fa-compress"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="view-planner" class="hidden p-3 md:p-6 space-y-6 pb-20"><div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-center max-w-sm mx-auto mt-6 sm:mt-10"><div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl"><i class="fas fa-qrcode"></i></div><h3 class="text-xl font-bold mb-2 text-slate-800 dark:text-white">Scanner de Acceso</h3><button onclick="openReceptionView()" class="w-full bg-slate-800 dark:bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-slate-900 transition shadow-xl active:scale-95 flex justify-center items-center gap-2"><i class="fas fa-external-link-alt"></i> Abrir Herramienta</button>
+            <div class="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center gap-3"><p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed px-2">Copia este enlace y envíalo a la persona encargada de recibir a los invitados en puerta (Wendy Planner o Cadenero).</p><div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 w-full"><input type="text" id="plannerLinkInput" class="w-full bg-transparent text-[11px] font-mono outline-none px-3 text-slate-600 dark:text-slate-400" readonly><button onclick="copyPlannerLink()" class="bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-lg shadow-sm font-bold text-[10px] border border-slate-200 dark:border-slate-600 active:scale-95 transition">COPIAR</button></div></div></div></div>
+        </div></div></div>
+    </div>
+    
+    <!-- WENDY PLANNER APP (Nueva Interfaz) -->
+    <div id="wendyPlannerApp" class="fixed inset-0 z-[200] bg-slate-50 dark:bg-slate-900 hidden h-[100dvh] flex flex-col transition-transform transform translate-y-full">
+        <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4 flex justify-between items-center shadow-sm z-20 shrink-0">
+            <h2 class="font-bold text-slate-800 dark:text-white flex items-center gap-2"><i class="fas fa-clipboard-check text-blue-600"></i> Recepción</h2>
+            <div class="flex items-center gap-4">
+                <button onclick="show('wpInstructionsModal')" class="text-blue-500 hover:text-blue-600 transition"><i class="fas fa-question-circle text-xl"></i></button>
+                <button onclick="closeReceptionView()" class="text-slate-400 hover:text-slate-600 transition"><i class="fas fa-times text-xl"></i></button>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-hidden relative">
+            <!-- TAB 1: SCANNER -->
+            <div id="wp-tab-scanner" class="absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-950">
+                <div class="w-full max-w-sm bg-slate-900 rounded-[2rem] overflow-hidden relative shadow-2xl border border-slate-800 aspect-square flex items-center justify-center">
+                    <div id="reader" class="w-full h-full flex items-center justify-center"></div>
+                </div>
+                <div class="mt-8 text-center"><i class="fas fa-qrcode text-3xl text-slate-600 mb-3 block"></i><p class="text-white text-sm opacity-80 font-medium">Enfoca el código QR del invitado</p></div>
+            </div>
+            
+            <!-- TAB 2: LISTA -->
+            <div id="wp-tab-list" class="absolute inset-0 bg-slate-50 dark:bg-slate-900 overflow-y-auto hidden p-4 pb-24 admin-scroll">
+                <div class="relative mb-4 sticky top-0 z-10"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" id="wpSearchInput" oninput="renderWPList()" placeholder="Buscar invitado..." class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none text-slate-800 dark:text-white shadow-sm font-medium"></div>
+                <div id="wpGuestList" class="space-y-2"></div>
+            </div>
+
+            <!-- TAB 3: MAPA -->
+            <div id="wp-tab-map" class="absolute inset-0 bg-slate-100 dark:bg-slate-950 overflow-hidden hidden flex flex-col">
+                <div class="w-full flex-1 relative overflow-auto touch-pan-x touch-pan-y" id="wpMapScrollArea">
+                    <div id="wpVenueCanvas" class="no-select transition-all duration-100 ease-linear mx-auto"></div>
+                </div>
+                <div class="absolute bottom-24 right-6 flex flex-col gap-2 z-50">
+                    <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition hidden md:flex" onclick="zoomWpMap(0.1)"><i class="fas fa-plus"></i></button>
+                    <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition hidden md:flex" onclick="zoomWpMap(-0.1)"><i class="fas fa-minus"></i></button>
+                    <button class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 flex justify-center items-center text-slate-700 dark:text-slate-300 active:scale-95 transition" onclick="resetWpMapZoom()"><i class="fas fa-compress"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around items-center pb-safe shrink-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button onclick="switchWpTab('scanner')" id="wp-btn-scanner" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-blue-600 transition"><i class="fas fa-qrcode text-xl"></i><span class="text-[10px] font-bold uppercase tracking-wider">Scanner</span></button>
+            <button onclick="switchWpTab('list')" id="wp-btn-list" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition"><i class="fas fa-users text-xl"></i><span class="text-[10px] font-bold uppercase tracking-wider">Lista</span></button>
+            <button onclick="switchWpTab('map')" id="wp-btn-map" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-slate-400 hover:text-blue-500 transition"><i class="fas fa-map-marked-alt text-xl"></i><span class="text-[10px] font-bold uppercase tracking-wider">Plano</span></button>
+        </div>
+        
+        <!-- SCAN RESULT MODAL -->
+        <div id="wpScanModal" class="hidden absolute inset-0 z-[250] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate__animated animate__zoomIn flex flex-col items-center text-center border border-slate-200 dark:border-slate-700">
+                <div id="wpScanIcon" class="text-6xl mb-4 drop-shadow-md"></div>
+                <h3 id="wpScanName" class="text-2xl font-black text-slate-800 dark:text-white leading-tight mb-2">Nombre</h3>
+                <p id="wpScanStatus" class="text-xs font-black px-4 py-1.5 rounded-full mb-6 tracking-widest uppercase shadow-sm">Status</p>
+                <div class="w-full grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold mb-1"><i class="fas fa-chair mr-1"></i> Mesa</span>
+                        <span id="wpScanTable" class="text-2xl font-black text-blue-600 dark:text-blue-400">-</span>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl border border-slate-100 dark:border-slate-600">
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold mb-1"><i class="fas fa-users mr-1"></i> Pases</span>
+                        <span id="wpScanPax" class="text-2xl font-black text-slate-800 dark:text-white">0</span>
+                    </div>
+                </div>
+                <div class="flex gap-3 w-full">
+                    <button id="wpScanCloseBtn" onclick="closeWpScanModal()" class="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-4 rounded-xl active:scale-95 transition text-sm">Escanear Siguiente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- WP INSTRUCTIONS MODAL -->
+    <div id="wpInstructionsModal" class="hidden fixed inset-0 z-[300] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full relative border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn">
+            <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-6 text-center">Guía de Recepción</h2>
+            <ul class="space-y-5 mb-8">
+                <li class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 text-lg"><i class="fas fa-qrcode"></i></div>
+                    <div><p class="font-bold text-slate-800 dark:text-white text-sm mb-1">Scanner Automático</p><p class="text-xs text-slate-500 leading-relaxed">Solo enfoca el código QR. El sistema registrará la entrada, mostrará la tarjeta de acceso y estará listo para el siguiente invitado automáticamente en segundos.</p></div>
+                </li>
+                <li class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0 text-lg"><i class="fas fa-users"></i></div>
+                    <div><p class="font-bold text-slate-800 dark:text-white text-sm mb-1">Lista Manual</p><p class="text-xs text-slate-500 leading-relaxed">Busca invitados por nombre y dales acceso con el botón de ingreso si olvidaron su código.</p></div>
+                </li>
+                <li class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 text-lg"><i class="fas fa-map-marked-alt"></i></div>
+                    <div><p class="font-bold text-slate-800 dark:text-white text-sm mb-1">Plano en Vivo</p><p class="text-xs text-slate-500 leading-relaxed">Revisa la ubicación exacta de las mesas para guiar a los invitados dentro del salón.</p></div>
+                </li>
+            </ul>
+            <button onclick="hide('wpInstructionsModal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition tracking-wide">¡Entendido!</button>
+        </div>
+    </div>
+    
+    <div id="initialSetupModal" class="fixed inset-0 z-[100] hidden bg-slate-900/95 flex items-center justify-center p-4 backdrop-blur-md"><div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-md w-full relative admin-theme border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn max-h-[90vh] overflow-y-auto"><button onclick="hide('initialSetupModal')" class="absolute top-4 right-4 bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button><div class="text-center mb-6 mt-4"><div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fas fa-layer-group"></i></div><h2 id="initSetupTitle" class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Áreas del Evento</h2><p id="initSetupDesc" class="text-sm text-slate-500 dark:text-slate-400">Edita las medidas o agrega nuevas secciones.</p></div><div id="venueAreasList" class="space-y-3 mb-4 max-h-60 overflow-y-auto admin-scroll"></div><div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Nueva Área</p><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Ancho (m)</label><input type="number" id="newAreaW" value="10" min="1" max="100" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-slate-800 dark:text-white font-bold text-center"></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Largo (m)</label><input type="number" id="newAreaL" value="10" min="1" max="100" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-slate-800 dark:text-white font-bold text-center"></div></div><button type="button" onclick="addNewVenueArea()" class="w-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 font-bold py-2 rounded-xl transition text-xs border border-blue-200 dark:border-blue-800"><i class="fas fa-plus"></i> Agregar Área</button></div><div class="flex gap-2 mt-4"><button onclick="enableFloorEditing()" class="flex-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-bold py-4 rounded-xl transition text-xs border border-indigo-200 dark:border-indigo-800"><i class="fas fa-arrows-alt"></i> Mover Bloques</button><button onclick="hide('initialSetupModal')" class="flex-1 bg-slate-800 text-white font-bold py-4 rounded-xl shadow-lg transition active:scale-95 text-xs">Listo</button></div></div></div>
+    <div id="tableConfigModal" class="fixed inset-0 z-[100] hidden bg-slate-900/95 flex items-center justify-center p-4 backdrop-blur-md"><div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-md w-full relative admin-theme border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn max-h-[90vh] overflow-y-auto"><button onclick="hide('tableConfigModal')" class="absolute top-4 right-4 bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button><div class="text-center mb-6 mt-4"><div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"><i class="fas fa-cog"></i></div><h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Generar Mesas</h2><p class="text-sm text-slate-500 dark:text-slate-400">Configura y crea mesas automáticamente.</p></div><form id="tableGenerationForm" class="space-y-4"><div id="singleConfigContainer"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Cantidad de Mesas</label><input type="number" id="initTableCount" value="10" min="1" max="100" class="w-full p-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div></div><div class="flex items-center justify-between bg-blue-50 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30"><span class="text-xs font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2"><i class="fas fa-layer-group"></i> Variedad (Mezcla de mesas)</span><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="varietyToggle" class="sr-only peer" onchange="toggleVariety()"><div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div></label></div><div id="singleTypeConfig" class="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Tipo de Mesa</label><select id="initTableShape" onchange="updateInitInputs()" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-sm"><option value="round">Redonda (1.5m Diám)</option><option value="square">Cuadrada (1.5m x 1.5m)</option><option value="rect">Rectangular (2.44m x 0.75m)</option><option value="custom">Personalizada (Sin límites)</option></select></div><div id="initRoundConfig"><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Sillas por Mesa</label><input type="number" id="initTableCap" value="10" min="1" max="10" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div><div id="initRectConfig" class="hidden grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Largo (Lados)</label><input type="number" id="initTableX" value="3" min="1" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Ancho (Cabecera)</label><input type="number" id="initTableY" value="1" min="1" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div></div><div id="initCustomConfig" class="hidden grid grid-cols-2 gap-3"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Largo (Lados)</label><input type="number" id="initCustomX" value="3" min="1" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Ancho (Cabecera)</label><input type="number" id="initCustomY" value="1" min="1" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center"></div></div></div><div id="initMixedConfig" class="hidden space-y-4"><div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700 dark:text-slate-300">Redondas (1.5m)</span><input type="number" id="mixRoundCount" placeholder="Cant." class="w-16 p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"></div><div class="flex items-center gap-2"><label class="text-[10px] text-slate-500 uppercase">Sillas (Max 10):</label><input type="number" id="mixRoundCap" value="10" max="10" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div></div><div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700 dark:text-slate-300">Cuadradas (1.5x1.5m)</span><input type="number" id="mixSquareCount" placeholder="Cant." class="w-16 p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-500 uppercase text-center">Largo</label><input type="number" id="mixSquareX" value="3" max="3" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div><div><label class="block text-[10px] text-slate-500 uppercase text-center">Ancho</label><input type="number" id="mixSquareY" value="3" max="3" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div></div></div><div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700 dark:text-slate-300">Rectangulares (2.44x0.75m)</span><input type="number" id="mixRectCount" placeholder="Cant." class="w-16 p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-500 uppercase text-center">Largo (Max 5)</label><input type="number" id="mixRectX" value="3" max="5" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div><div><label class="block text-[10px] text-slate-500 uppercase text-center">Ancho (Max 1)</label><input type="number" id="mixRectY" value="1" max="1" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div></div></div><div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-slate-700 dark:text-slate-300">Personalizadas</span><input type="number" id="mixCustomCount" placeholder="Cant." class="w-16 p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500"></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-slate-500 uppercase text-center">Largo (m)</label><input type="number" id="mixCustomL" step="0.1" value="2.0" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div><div><label class="block text-[10px] text-slate-500 uppercase text-center">Ancho (m)</label><input type="number" id="mixCustomW" step="0.1" value="1.0" class="w-full p-1 text-center rounded border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-sm text-slate-800 dark:text-white outline-none"></div></div></div></div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition mt-6 active:scale-95">Generar Configuración</button></form></div></div>
+    <div id="editTableModal" class="fixed inset-0 z-[120] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-900 p-6 rounded-3xl w-full max-w-sm border border-slate-200 dark:border-slate-700 shadow-2xl animate__animated animate__fadeInUp max-h-[90vh] overflow-y-auto admin-scroll"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 dark:text-white" id="editTableTitle">Configurar Mesa</h3><button type="button" onclick="hide('editTableModal')" class="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button></div><form id="editTableForm" class="space-y-4"><input type="hidden" id="editTableId"><div class="grid grid-cols-2 gap-4"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Nombre/No.</label><input type="text" id="editTableLabel" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm text-center text-slate-800 dark:text-white font-bold" required></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Forma</label><select id="editTableShape" onchange="updateEditInputs()" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm text-slate-800 dark:text-white font-bold"><option value="round">Redonda (1.5m Diám)</option><option value="square">Cuadrada (1.5x1.5m)</option><option value="rect">Rectangular (2.44x0.75m)</option><option value="custom">Personalizada (Libre)</option></select></div></div><div id="editCustomDims" class="hidden grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 text-center uppercase">Largo (m)</label><input type="number" id="editDimLargo" step="0.1" value="2.0" class="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-center text-slate-800 dark:text-white font-bold"></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 text-center uppercase">Ancho (m)</label><input type="number" id="editDimAncho" step="0.1" value="1.0" class="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-center text-slate-800 dark:text-white font-bold"></div></div><div id="editRoundGroup" class="block bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 text-center">Sillas (Max 10)</label><input type="number" id="editCapRound" min="1" max="10" class="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-center text-slate-800 dark:text-white font-bold"></div><div id="editSquareGroup" class="hidden gap-4 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 text-center">Sillas Largo</label><input type="number" id="editCapX" min="1" class="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-center text-slate-800 dark:text-white font-bold"></div><div class="flex-1"><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 text-center">Sillas Ancho</label><input type="number" id="editCapY" min="1" class="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg outline-none text-center text-slate-800 dark:text-white font-bold"></div></div><div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Mantelería</p><div class="flex items-center gap-3 mb-2"><input type="color" id="editTableColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0" value="#ffffff"><label class="text-xs font-bold text-slate-600 dark:text-slate-300 flex-1">Color Mantel Base</label></div><div class="flex items-center gap-3"><input type="checkbox" id="editTableOverlayCheck" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onchange="toggle('overlayColorDiv',this.checked)"><label class="text-xs font-bold text-slate-600 dark:text-slate-300">Cubre Mantel</label></div><div id="overlayColorDiv" class="flex items-center gap-3 mt-2 hidden"><input type="color" id="editTableOverlayColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0" value="#ffd700"><label class="text-xs font-bold text-slate-600 dark:text-slate-300 flex-1">Color Cubre</label></div></div><div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Sillas y Cojines</p><div class="grid grid-cols-3 gap-2 mb-3"><div class="text-center"><input type="color" id="editChairColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0 mx-auto" value="#000000"><label class="block text-[9px] font-bold text-slate-500 mt-1">Estructura</label></div><div class="text-center"><input type="color" id="editCushionColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0 mx-auto" value="#ffffff"><label class="block text-[9px] font-bold text-slate-500 mt-1">Cojín</label></div><div class="text-center"><input type="color" id="editOccupiedColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0 mx-auto" value="#64748b"><label class="block text-[9px] font-bold text-slate-500 mt-1">Ocupado</label></div></div></div><div id="recentColorsSection" class="hidden"><p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Colores Recientes</p><div id="recentColorsContainer" class="flex flex-wrap gap-2"></div></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Rotación</label><div class="flex items-center gap-2"><input type="range" id="editTableRotation" min="0" max="360" value="0" step="5" class="w-full accent-blue-600" oninput="$('rotVal').innerText=this.value+'°'"><span id="rotVal" class="text-xs font-bold text-slate-700 dark:text-slate-300 w-8 text-right">0°</span></div><div class="flex gap-2 mt-2 justify-center"><button type="button" onclick="adjustTableRotation(45)" class="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition">+45°</button><button type="button" onclick="adjustTableRotation(90)" class="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition">+90°</button><button type="button" onclick="resetTableRotation()" class="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-xs font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition">0°</button></div></div><div class="flex gap-3 pt-2"><button type="button" id="btnDeleteTable" onclick="deleteTableFromMap()" class="bg-red-50 text-red-600 px-5 py-3 rounded-xl font-bold text-sm hidden hover:bg-red-100 active:scale-95 transition border border-red-100"><i class="fas fa-trash"></i></button><button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg text-sm hover:bg-blue-700 active:scale-95 transition">Guardar</button></div></form></div></div>
+    <div id="editObjectModal" class="fixed inset-0 z-[120] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-900 p-6 rounded-3xl w-full max-w-sm border border-slate-200 dark:border-slate-700 shadow-2xl animate__animated animate__fadeInUp"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 dark:text-white">Editar Objeto</h3><button type="button" onclick="hide('editObjectModal')" class="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button></div><form id="editObjectForm" class="space-y-4"><input type="hidden" id="editObjId"><input type="hidden" id="editObjType"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Nombre</label><input type="text" id="editObjName" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-sm font-bold text-slate-800 dark:text-white"></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Ancho (m)</label><input type="number" id="editObjWidth" step="0.1" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-center font-bold text-slate-800 dark:text-white"></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase text-center">Largo (m)</label><input type="number" id="editObjHeight" step="0.1" class="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-center font-bold text-slate-800 dark:text-white"></div></div><div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><input type="color" id="editObjColor" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><label class="text-xs font-bold text-slate-600 dark:text-slate-300">Color</label></div><div><label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Rotación</label><input type="range" id="editObjRotation" min="0" max="360" step="5" class="w-full accent-purple-600"></div><div class="flex gap-3 pt-2"><button type="button" onclick="deleteObject()" class="bg-red-50 text-red-600 px-5 py-3 rounded-xl font-bold text-sm hover:bg-red-100 active:scale-95 transition border border-red-100"><i class="fas fa-trash"></i></button><button type="submit" class="flex-1 bg-purple-600 text-white font-bold py-3.5 rounded-xl shadow-lg text-sm hover:bg-purple-700 active:scale-95 transition">Guardar</button></div></form></div></div>
+    <div id="addGuestModal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-900 p-6 rounded-3xl w-full max-w-sm border border-slate-200 dark:border-slate-700 shadow-2xl max-h-[90vh] overflow-y-auto admin-scroll"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 dark:text-white">Nueva Invitación</h3><button type="button" onclick="hide('addGuestModal')" class="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button></div><form id="addGuestFormModal" class="space-y-5"><div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Nombre o Familia</label><input type="text" id="inputName" placeholder="Ej. Familia Pérez" class="w-full p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-base sm:text-sm placeholder-slate-400" required></div><div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">WhatsApp</label><div class="flex"><select id="countryCodeSelect" class="border border-r-0 border-slate-200 dark:border-slate-700 rounded-l-xl bg-slate-50 dark:bg-slate-800 p-4 text-base sm:text-sm text-slate-800 dark:text-white font-bold outline-none"><option value="52"> +52</option><option value="1"> +1</option></select><input type="tel" id="inputPhone" placeholder="10 dígitos" class="border border-slate-200 dark:border-slate-700 p-4 rounded-r-xl w-full bg-slate-50 dark:bg-slate-800 outline-none text-slate-800 dark:text-white font-bold text-base sm:text-sm placeholder-slate-400" required></div></div><div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700"><span class="text-sm font-bold text-slate-500 dark:text-slate-400 ml-2 uppercase">Pases:</span><div class="flex items-center bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"><button type="button" onclick="adjustTickets(-1)" class="w-12 h-12 hover:bg-slate-100 dark:hover:bg-slate-800 font-black text-slate-500 text-lg active:bg-slate-200">-</button><input type="number" id="inputTickets" value="2" class="w-12 text-center bg-transparent outline-none font-black text-slate-800 dark:text-white text-lg" readonly><button type="button" onclick="adjustTickets(1)" class="w-12 h-12 hover:bg-slate-100 dark:hover:bg-slate-800 font-black text-slate-500 text-lg active:bg-slate-200">+</button></div></div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg text-base active:scale-95 transition flex justify-center items-center gap-2 mt-4"><i class="fab fa-whatsapp text-xl"></i> Enviar Invitación</button></form></div></div>
+    <div id="editGuestTableModal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full relative admin-theme border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 dark:text-white">Asignar Mesa</h3><button type="button" onclick="hide('editGuestTableModal')" class="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button></div><form id="editGuestTableForm" class="space-y-4"><input type="hidden" id="editGT_id"><div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Selecciona la mesa</label><select id="editGT_select" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-bold text-center text-base sm:text-sm"></select></div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition mt-4 active:scale-95">Guardar Cambios</button></form></div></div>
+    <div id="editGuestPaxModal" class="hidden fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full relative admin-theme border border-slate-200 dark:border-slate-700 animate__animated animate__zoomIn"><div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 dark:text-white">Modificar Pases</h3><button type="button" onclick="hide('editGuestPaxModal')" class="bg-slate-100 dark:bg-slate-800 p-2 rounded-full text-slate-400 hover:text-slate-600 active:scale-95"><i class="fas fa-times w-5 h-5 flex justify-center items-center"></i></button></div><form id="editGuestPaxForm" class="space-y-4"><input type="hidden" id="editGP_id"><div><label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase text-center">Cantidad de Pases</label><input type="number" id="editGP_input" min="1" class="w-full p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl outline-none text-slate-800 dark:text-white font-black text-center text-2xl" required></div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition mt-4 active:scale-95">Guardar Cambios</button></form></div></div>
+    <div id="tableWarningModal" class="hidden fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 p-6 rounded-3xl w-full max-w-sm border border-slate-200 dark:border-slate-700 shadow-2xl animate__animated animate__headShake max-h-[90vh] overflow-y-auto"><div class="text-center mb-4"><i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4 drop-shadow-md"></i><h3 class="text-xl font-black text-slate-800 dark:text-white">Capacidad Excedida</h3><p class="text-sm text-slate-500 dark:text-slate-400 mt-2">La mesa <strong class="text-slate-800 dark:text-white" id="twMesa">X</strong> solo tiene <strong class="text-red-500" id="twDisp">0</strong> sillas vacías, pero este invitado requiere <strong class="text-blue-500" id="twReq">0</strong> sillas.</p></div><div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-6"><p class="text-[10px] font-bold text-slate-400 uppercase mb-3 text-center">Alternativas Sugeridas:</p><div id="twSuggestions" class="flex flex-wrap gap-2 justify-center"></div></div><div class="flex flex-col gap-3"><button id="btnAutoSingle" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2 active:scale-95"><i class="fas fa-magic"></i> Auto-Acomodar Invitado</button><button onclick="closeTableWarning()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl transition text-sm active:scale-95">Cancelar Asignación</button></div></div></div>
+    
+    <div id="qrPreviewModal" class="hidden fixed inset-0 z-[150] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md" onclick="hide('qrPreviewModal')">
+        <div class="bg-white p-6 sm:p-8 rounded-[2rem] max-w-sm w-full text-center shadow-2xl transform transition-transform scale-100 animate__animated animate__zoomIn" onclick="event.stopPropagation()">
+            <div id="ticketContainer" class="bg-white pb-8 rounded-[2rem] border-4 border-dashed border-slate-200 mb-6 flex flex-col items-center relative overflow-hidden" style="transform: translateZ(0);">
+                <div id="qrModalCoverWrapper" class="absolute top-0 left-0 w-full h-40 z-0 hidden">
+                    <img id="qrModalCover" class="w-full h-full object-cover" src="" crossorigin="anonymous">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 to-white"></div>
+                </div>
+                <div class="w-full h-28 relative z-10"></div>
+                <div class="ticket-content w-full px-8 flex flex-col items-center relative z-10">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pase de Acceso</h3>
+                    <h2 class="text-2xl font-black text-slate-900 mb-4 leading-tight text-center" id="qrModalName">Nombre Invitado</h2>
+                    <div class="flex justify-center gap-4 text-sm font-bold text-slate-700 mb-5 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full relative">
+                        <span id="qrModalPax" class="flex items-center"><i class="fas fa-users text-slate-400 mr-2"></i> 0 Personas</span>
+                    </div>
+                    <div id="qrModalCanvas" class="flex justify-center mb-5 p-3 bg-white rounded-2xl shadow-sm border border-slate-100 w-fit mx-auto relative"></div>
+                    <p class="text-[10px] text-slate-400 font-mono tracking-widest bg-slate-50 py-1.5 px-4 rounded-lg border border-slate-100 relative" id="qrModalID">ID: ---</p>
+                </div>
+            </div>
+            <button onclick="downloadQrTicket()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl transition flex items-center justify-center gap-2 active:scale-95 text-sm uppercase tracking-wider"><i class="fas fa-download"></i> Guardar Imagen</button>
+            <button onclick="hide('qrPreviewModal')" class="mt-4 text-xs font-bold text-slate-400 uppercase tracking-wider p-2">Cerrar</button>
+        </div>
+    </div>
+    
+    <div id="guestDetailModal" class="hidden fixed inset-0 z-[70] bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm"><div class="bg-white dark:bg-slate-900 w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl overflow-hidden animate__animated animate__slideInUp sm:animate__fadeIn border-t border-slate-200 dark:border-slate-700 pb-6 sm:pb-0"><div class="p-6"><div class="flex justify-between items-start mb-6"><div><h2 id="mobName" class="text-2xl font-black text-slate-800 dark:text-white leading-tight">Nombre</h2><p id="mobPhone" class="text-sm text-slate-400 font-medium mt-1"></p></div><button onclick="hide('guestDetailModal')" class="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-full text-slate-500 dark:text-slate-400 active:scale-95"><i class="fas fa-times w-5 h-5 flex items-center justify-center"></i></button></div><div class="grid grid-cols-2 gap-3 mb-6"><div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center shadow-sm"><span class="block text-[10px] text-slate-400 uppercase font-bold mb-1"><i class="fas fa-users"></i> Pases</span><div class="flex justify-center items-center gap-2"><span id="mobTickets" class="text-2xl font-black text-slate-800 dark:text-white">0</span><button id="btnEditMobPax" class="text-slate-400 hover:text-blue-500 active:scale-95 transition"><i class="fas fa-edit"></i></button></div></div><div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 text-center shadow-sm flex flex-col justify-center"><span class="block text-[10px] text-slate-400 uppercase font-bold mb-1"><i class="fas fa-chair"></i> Mesa</span><div class="flex justify-center items-center gap-2"><span id="mobTableDisplay" class="text-2xl font-black text-blue-600 dark:text-blue-400">-</span><button id="mobEditTableBtn" class="text-slate-400 hover:text-blue-500 active:scale-95 transition"><i class="fas fa-edit"></i></button></div></div></div><div class="flex justify-center mb-6"><button id="btnVerQR" class="w-full flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-lg active:scale-95 transition"><i class="fas fa-qrcode text-lg"></i> Mostrar Código de Acceso</button></div><div id="mobStatusBadge" class="w-full py-3.5 rounded-xl text-center font-bold text-sm mb-6 border">Estado</div><button id="btnEliminarInvitacion" class="w-full text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-sm font-bold py-3.5 rounded-xl active:scale-95 transition"><i class="fas fa-trash-alt mr-2"></i> Eliminar Invitación</button></div></div></div>
+    
+    <script>
+        const adminPin="1234"; let html5QrCode=null, allGuests=[], eventConfig={imageUrl:""}, tablesData={}, venueObjects={}, venueFloors={}, tableOccupancy={}, recentColors=[], lastChairConfig={chair:'#000000',cushion:'#ffffff',occupied:'#64748b'}, mapZoom=1.0, scaleFactor=30;
+        let wpMapZoom=1.0, wpScaleFactor=30, wpIntroShown=false;
+        window.isMapEditMode = false;
+        window.wpScanActive = false; window.wpScanTimer = null;
+        let dragId=null, dragType=null, startX, startY, initX, initY, longPressTimer, isDragging=false, hasMoved=false, isFloorEditing=false, touchStartPos={x:0,y:0}, lastTap={time:0,id:null};
+        
+        window.getGuestTableCapacity=t=>t.shape==='round'?t.capacity:(t.chairsX+t.chairsY)*2;
+        window.createTableCard=(t,gList,c,tid)=>{
+            const tot=gList.reduce((s,x)=>s+x.tickets,0), cap=tid&&tablesData[tid]?window.getGuestTableCapacity(tablesData[tid]):0, full=tot>=cap, bC=c==='blue'?(full?'border-red-400':'border-blue-500 dark:border-blue-700'):'border-slate-300 dark:border-slate-700', bgC=c==='blue'?'bg-white dark:bg-slate-800':'bg-slate-50 dark:bg-slate-800/50';
+            const badge=tid?(full?`<span class="text-[8px] sm:text-[10px] text-red-500 font-bold ml-1 sm:ml-2 bg-red-50 dark:bg-red-900/20 px-1 sm:px-2 py-0.5 rounded uppercase">Lleno</span>`:`<span class="text-[8px] sm:text-[10px] text-slate-400 font-bold ml-1 sm:ml-2">(${tot}/${cap})</span>`):'';
+            let h=`<div class="${bgC} border-t-4 ${bC} shadow-sm rounded-xl sm:rounded-2xl p-3 sm:p-5 transition-transform hover:-translate-y-1 duration-300 flex flex-col min-w-0"><div class="flex justify-between items-center mb-2 sm:mb-4 border-b border-slate-100 dark:border-slate-700 pb-2"><h4 class="font-bold text-xs sm:text-base text-slate-800 dark:text-white flex items-center truncate mr-1">${t} ${badge}</h4><span class="text-[8px] sm:text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 sm:px-2 py-1 rounded-md font-bold shrink-0">${tot} Pax</span></div>`;
+            return h+(gList.length?`<ul class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 space-y-1.5 sm:space-y-2 flex-1 overflow-y-auto max-h-40 admin-scroll">${gList.map(x=>`<li class="flex justify-between items-center pb-1.5 sm:pb-2 border-b border-slate-50 dark:border-slate-700 last:border-0 last:pb-0"><span class="truncate pr-1 ${x.confirmed?'text-yellow-600 dark:text-yellow-400 font-bold':''}">${x.name}</span> <span class="font-bold bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 px-1 sm:px-1.5 py-0.5 rounded shrink-0">${x.tickets}</span></li>`).join('')}</ul>`:`<p class="text-[10px] sm:text-xs text-slate-400 italic text-center py-2 flex-1 flex items-center justify-center">Mesa vacía</p>`)+'</div>';
+        };
+        window.renderTablesView=()=>{
+            const g=$('tablesGrid'); if(!g)return; g.innerHTML=''; const t={};
+            Object.keys(tablesData).forEach(k=>t[k]=[]); allGuests.forEach(x=>{(t[x.table||'Sin Asignar']||(t[x.table||'Sin Asignar']=[])).push(x)});
+            $('tableStatsText').innerText=`${(t['Sin Asignar']||[]).length} invitados sin mesa.`;
+            if(t['Sin Asignar']?.length)g.innerHTML+=createTableCard('Sin Asignar',t['Sin Asignar'],'slate',null);
+            Object.keys(t).filter(k=>k!=='Sin Asignar').sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(k=>g.innerHTML+=createTableCard(k,t[k],'blue',k));
+        };
+        window.renderGuestList=()=>{
+            const tbody=$('guestTableBody'); if(!tbody)return; tbody.innerHTML='';
+            const s=$('searchGuestInput')?.value.toLowerCase()||'', opt=$('sortGuestSelect')?.value||'newest';
+            let list=allGuests.filter(g=>g.name.toLowerCase().includes(s));
+            if(opt==='confirmed')list=list.filter(g=>g.confirmed);
+            list.sort((a,b)=>opt==='name'?a.name.localeCompare(b.name):opt==='table'?String(a.table||'').localeCompare(String(b.table||''),undefined,{numeric:true}):opt==='tickets'?b.tickets-a.tickets:0);
+            if(!list.length) tbody.innerHTML=`<div class="p-8 text-center text-slate-400 dark:text-slate-500 font-bold text-sm">No se encontraron invitados.</div>`;
+            else tbody.innerHTML=list.map(g=>`<div class="flex flex-col md:flex-row w-full p-2 md:p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition"><div class="md:hidden w-full p-2.5 rounded-xl mb-1 flex items-center justify-between gap-2 ${g.confirmed?'status-card-confirmed':g.checkedIn?'status-card-checkedin':'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800'}" onclick="openMobileDetails('${g.id}')"><div class="flex items-center gap-2 overflow-hidden flex-1"><div class="font-black text-slate-800 dark:text-white text-[13px] leading-none truncate flex-1 min-w-0">${g.name}</div><div class="flex items-center gap-1 shrink-0 text-[10px]"><span class="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300"><i class="fas fa-user"></i>${g.tickets}</span><span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold"><i class="fas fa-chair"></i>${g.table||'--'}</span></div></div><div class="flex items-center gap-1.5 shrink-0"><button onclick="event.stopPropagation(); resendInvitation('${g.id}','${g.name}','${g.phone}')" class="w-8 h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-md active:scale-95 transition"><i class="fab fa-whatsapp text-[13px]"></i></button><button onclick="event.stopPropagation(); showGuestQR('${g.id}','${g.name}','${g.tickets}')" class="w-8 h-8 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-700 active:scale-95"><i class="fas fa-qrcode text-[13px]"></i></button></div></div><div class="hidden md:flex w-full items-center justify-between"><div class="w-1/3 font-bold text-slate-700 dark:text-slate-300 text-sm truncate pl-2 pr-2">${g.name}</div><div class="w-20 text-center"><span class="font-bold text-slate-600 dark:text-slate-300">${g.table||''}</span><button onclick="event.stopPropagation(); window.openEditGuestTable('${g.id}','${g.table||''}')" class="text-slate-400 hover:text-blue-500 transition ml-2"><i class="fas fa-edit"></i></button></div><div class="w-16 text-center"><button onclick="showGuestQR('${g.id}','${g.name}','${g.tickets}')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-blue-500 transition active:scale-95 flex items-center justify-center mx-auto"><i class="fas fa-qrcode"></i></button></div><div class="w-24 text-center"><span class="font-bold text-slate-600 dark:text-slate-300 text-sm">${g.tickets}</span><button onclick="event.stopPropagation(); window.openEditGuestPax('${g.id}',${g.tickets})" class="text-slate-400 hover:text-blue-500 transition ml-2"><i class="fas fa-edit"></i></button></div><div class="w-24 text-center">${g.checkedIn?'<span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded text-[10px] font-bold">Ingresó</span>':g.confirmed?'<span class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded text-[10px] font-bold">Confirmado</span>':'<span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-1 rounded text-[10px] font-bold">Pendiente</span>'}</div><div class="w-24 text-center flex justify-center gap-2"><button onclick="resendInvitation('${g.id}','${g.name}','${g.phone}')" class="w-8 h-8 rounded-full bg-green-50 dark:bg-green-900/20 text-green-500 hover:bg-green-100 transition active:scale-95"><i class="fab fa-whatsapp"></i></button><button onclick="confirmDeleteGuest('${g.id}')" class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-400 hover:bg-red-100 hover:text-red-500 transition active:scale-95"><i class="fas fa-trash-alt"></i></button></div></div></div>`).join('');
+        };
+        window.renderWPList=()=>{
+            const c=$('wpGuestList'); if(!c)return;
+            const s=$('wpSearchInput').value.toLowerCase();
+            let l=allGuests.filter(g=>g.name.toLowerCase().includes(s));
+            l.sort((a,b)=>a.name.localeCompare(b.name));
+            if(!l.length){c.innerHTML=`<div class="p-8 text-center text-slate-400 font-bold text-sm">No hay invitados que coincidan.</div>`;return}
+            c.innerHTML=l.map(g=>`<div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex justify-between items-center shadow-sm mb-2"><div><div class="font-black text-slate-800 dark:text-white text-base">${g.name}</div><div class="text-[10px] text-slate-500 font-bold flex gap-2 mt-1"><span class="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded"><i class="fas fa-users mr-1"></i>${g.tickets}</span><span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded"><i class="fas fa-chair mr-1"></i>${g.table||'Sin mesa'}</span></div></div><div>${g.checkedIn?'<span class="bg-green-100 text-green-600 px-3 py-1.5 rounded-full text-[10px] font-black uppercase"><i class="fas fa-check"></i> Ingresó</span>':`<button onclick="manualWpCheckin('${g.id}','${g.name}')" class="bg-slate-100 hover:bg-green-100 dark:bg-slate-700 text-slate-500 hover:text-green-600 dark:hover:text-green-400 px-3 py-1.5 rounded-full text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-1.5 border border-slate-200 dark:border-slate-600 hover:border-green-200"><i class="fas fa-sign-in-alt"></i> Dar Acceso</button>`}</div></div>`).join('');
+        };
+        window.onclick=e=>{if(!e.target.closest('.dropdown-content')&&!e.target.closest('button[onclick*="Dropdown"]'))$$('.dropdown-content').forEach(d=>d.classList.remove('show'))};
+        window.addEventListener('DOMContentLoaded', () => {
+            const p=new URLSearchParams(window.location.search); if(p.get('view')==='wendy_planner'){$('guestView')?.classList.add('hidden');openReceptionView();}
+            fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{const s=$('countryCodeSelect');if(s){const o=document.createElement('option');o.value=d.country_calling_code.replace('+','');o.text=`${d.country_name} ${d.country_calling_code}`;s.add(o,0);s.selectedIndex=0}}).catch(e=>{});
+            window.addEventListener('resize', ()=>{if(!$('view-map')?.classList.contains('hidden'))renderMap(); if(!$('wp-tab-map')?.classList.contains('hidden'))renderWpMap();});
+        });
+        window.showToast=(msg,icon='check')=>{const t=$('toastMsg');if(!t)return;$('toastText').innerText=msg;$('toastIcon').innerHTML=`<i class="fas ${icon==='error'?'fa-times-circle text-red-400':icon==='check'?'fa-check-circle text-green-400':'fa-info-circle text-blue-400'}"></i>`;t.classList.remove('-translate-y-32','opacity-0');setTimeout(()=>t.classList.add('-translate-y-32','opacity-0'),3000)};
+        window.showAlert=(title,text,type='info')=>{$('sysModalIcon').innerHTML=`<i class="fas ${type==='error'?'fa-times-circle text-red-500':type==='success'?'fa-check-circle text-green-500':'fa-info-circle text-blue-500'}"></i>`;$('sysModalTitle').innerText=title;$('sysModalText').innerText=text;$('sysModalActions').innerHTML=`<button onclick="hide('sysModal')" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-3.5 rounded-xl active:scale-95 transition shadow-lg">Aceptar</button>`;show('sysModal')};
+        window.showConfirm=(title,text,cb)=>{$('sysModalIcon').innerHTML='<i class="fas fa-question-circle text-yellow-500"></i>';$('sysModalTitle').innerText=title;$('sysModalText').innerText=text;window.tempCb=()=>{hide('sysModal');cb()};$('sysModalActions').innerHTML=`<button onclick="hide('sysModal')" class="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3.5 rounded-xl active:scale-95 transition">Cancelar</button><button onclick="window.tempCb()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl active:scale-95 transition shadow-lg">Confirmar</button>`;show('sysModal')};
+        window.openAdminLogin=()=>show('loginModal'); window.closeAdmin=()=>$('adminPanel')?.classList.add('translate-y-full');
+        window.checkLogin=()=>{if($('adminPassword').value===adminPin){hide('loginModal');$('adminPanel')?.classList.remove('translate-y-full');loadConfig();if($('plannerLinkInput'))$('plannerLinkInput').value=window.location.origin+window.location.pathname+"?view=wendy_planner"}else showAlert("Acceso Denegado","PIN incorrecto.","error")};
+        window.switchTab=t=>{['guests','tables','map','planner'].forEach(x=>{hide(`view-${x}`);const b=$(`tab-${x}`);if(b){b.className="py-4 px-4 sm:px-6 border-b-2 border-transparent text-slate-500 dark:text-slate-400 font-medium text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800"}});show(`view-${t}`);$(`tab-${t}`).className="py-4 px-4 sm:px-6 border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 font-bold text-base sm:text-sm transition flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800";if(t==='tables')renderTablesView();if(t==='map')setTimeout(renderMap,100)};
+        
+        window.toggleMapEditMode=(enable)=>{
+            window.isMapEditMode = enable;
+            const tools = $('mapEditTools');
+            const btn = $('btnEditarPlano');
+            if(enable) {
+                tools.classList.remove('hidden'); tools.classList.add('flex');
+                btn.classList.add('hidden');
+            } else {
+                tools.classList.add('hidden'); tools.classList.remove('flex');
+                btn.classList.remove('hidden');
+                if(isFloorEditing) { isFloorEditing = false; hide('saveFloorBtn'); }
+            }
+            renderMap();
+        };
+
+        function loadConfig(){if(!window.db||!window.isAuthReady){setTimeout(loadConfig,500);return}window.onSnapshot(window.doc(window.db,'artifacts',window.appId,'public','data','settings','config'),s=>{if(s.exists()){const d=s.data();if(d.imageUrl){eventConfig.imageUrl=d.imageUrl;if($('configImageUrlHidden'))$('configImageUrlHidden').value=d.imageUrl;if($('configImagePreview')){$('configImagePreview').src=d.imageUrl;show('configImagePreview');show('btnRemoveConfigImage');}if($('metaOgImage'))$('metaOgImage').content=d.imageUrl;}else{eventConfig.imageUrl='';if($('configImageUrlHidden'))$('configImageUrlHidden').value='';if($('configImagePreview')){hide('configImagePreview');hide('btnRemoveConfigImage');}if($('metaOgImage'))$('metaOgImage').content='';}if(d.tablesData)tablesData=d.tablesData;if(d.venueObjects)venueObjects=d.venueObjects;if(d.venueFloors)venueFloors=d.venueFloors;else if(d.venueDims)venueFloors={'floor_default':{id:'floor_default',name:'Salón Principal',width:d.venueDims.width,height:d.venueDims.length,x:0,y:0}};if(d.recentColors)recentColors=d.recentColors;if(d.lastChairConfig)lastChairConfig=d.lastChairConfig}if(!venueFloors||!Object.keys(venueFloors).length)venueFloors={'floor_default':{id:'floor_default',name:'Salón Principal',width:20,height:30,x:0,y:0}};window.loadAdminData()})}
+        window.loadAdminData=()=>{window.onSnapshot(window.query(window.collection(window.db,'artifacts',window.appId,'public','data','guests'),window.orderBy('createdAt','desc')),s=>{allGuests=[];let t=0,c=0,i=0;tableOccupancy={};Object.keys(tablesData).forEach(k=>tableOccupancy[k]=0);s.forEach(d=>{const g=d.data();g.id=d.id;allGuests.push(g);t+=g.tickets;if(g.confirmed)c+=g.tickets;if(g.checkedIn)i+=(g.actualAttendees||g.tickets);if(g.table&&tableOccupancy[g.table]!==undefined)tableOccupancy[g.table]+=g.tickets});if(typeof window.renderGuestList==='function')window.renderGuestList();$('dashTotalGuests').innerText=t;$('dashConfirmed').innerText=c;$('dashCheckedIn').innerText=i;if(!$('view-tables')?.classList.contains('hidden'))window.renderTablesView();if(!$('view-map')?.classList.contains('hidden'))renderMap(); if(!$('wp-tab-list')?.classList.contains('hidden'))window.renderWPList(); if(!$('wp-tab-map')?.classList.contains('hidden'))renderWpMap();})};
+        window.exportData=t=>{if(!allGuests.length)return showAlert("Error","No hay datos","error");const d=allGuests.map(g=>[g.name,g.phone,g.tickets,g.table||"Sin mesa",g.confirmed?"Sí":"No",g.checkedIn?"Sí":"No"]),h=["Nombre","Teléfono","Pases","Mesa","Confirmado","Ingresó"];if(t==='xlsx'){const ws=XLSX.utils.aoa_to_sheet([h,...d]),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Invitados");XLSX.writeFile(wb,"invitados.xlsx")}else{const doc=new window.jspdf.jsPDF();doc.text("Lista Invitados",14,15);doc.autoTable({head:[h],body:d,startY:20});doc.save("invitados.pdf")}$('exportDropdown')?.classList.remove('show')};
+        window.openReconfigureModal=()=>{const l=$('venueAreasList');l.innerHTML='';if(!Object.keys(venueFloors).length)l.innerHTML='<p class="text-xs text-slate-400 text-center">Sin áreas.</p>';else Object.values(venueFloors).forEach(f=>{l.innerHTML+=`<div class="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 gap-2"><div class="flex justify-between items-center"><span class="block text-xs font-bold text-slate-800 dark:text-white">${f.name||'Área'}</span><button onclick="deleteVenueArea('${f.id}')" class="text-red-400 hover:text-red-600 px-2"><i class="fas fa-trash"></i></button></div><div class="grid grid-cols-2 gap-2"><div class="flex items-center gap-1"><label class="text-[9px] font-bold text-slate-400">ANCHO:</label><input type="number" value="${f.width}" min="1" class="w-full p-1 text-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs text-slate-800 dark:text-white font-bold" onchange="updateVenueArea('${f.id}','width',this.value)"></div><div class="flex items-center gap-1"><label class="text-[9px] font-bold text-slate-400">LARGO:</label><input type="number" value="${f.height}" min="1" class="w-full p-1 text-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-xs text-slate-800 dark:text-white font-bold" onchange="updateVenueArea('${f.id}','height',this.value)"></div></div></div>`});show('initialSetupModal')};
+        window.updateVenueArea=(id,p,v)=>{if(venueFloors[id]){venueFloors[id][p]=parseFloat(v);saveMapToFirebase();renderMap()}};
+        window.addNewVenueArea=async()=>{const w=parseFloat($('newAreaW').value)||10,l=parseFloat($('newAreaL').value)||10,id='floor_'+Date.now();venueFloors[id]={id,name:`Área ${Object.keys(venueFloors).length+1}`,width:w,height:l,x:Object.keys(venueFloors).length*5,y:0};await saveMapToFirebase();openReconfigureModal();renderMap()};
+        window.deleteVenueArea=id=>{if(Object.keys(venueFloors).length<=1)return showAlert("Aviso","Debe haber al menos un área.");showConfirm("Borrar","¿Eliminar área?",async()=>{delete venueFloors[id];await saveMapToFirebase();openReconfigureModal();renderMap()})};
+        window.enableFloorEditing=()=>{isFloorEditing=true;hide('initialSetupModal');show('saveFloorBtn');renderMap()};
+        window.saveFloorLayout=async()=>{isFloorEditing=false;hide('saveFloorBtn');await saveMapToFirebase();renderMap();showToast("Distribución Guardada")};
+        
+        window.openTableConfigModal=()=>{$('initTableCount').value=0;$('varietyToggle').checked=false;toggleVariety();$('initTableShape').value='round';updateInitInputs();show('tableConfigModal')};
+        window.toggleVariety=()=>{const m=$('varietyToggle').checked;toggle('singleTypeConfig',!m);toggle('singleConfigContainer',!m);toggle('initMixedConfig',m);if(!m)updateInitInputs()};
+        window.updateInitInputs=()=>{const s=$('initTableShape').value;['initRoundConfig','initRectConfig','initCustomConfig'].forEach(id=>hide(id));if(s==='custom')show('initCustomConfig');else if(s==='round')show('initRoundConfig');else{show('initRectConfig');const ix=$('initTableX'),iy=$('initTableY');if(s==='rect'){ix.max=5;iy.max=1}else{ix.max=3;iy.max=3}}};
+        $('tableGenerationForm')?.addEventListener('submit',async e=>{e.preventDefault();const m=$('varietyToggle').checked;let c=m?(parseInt($('mixRoundCount').value)||0)+(parseInt($('mixSquareCount').value)||0)+(parseInt($('mixRectCount').value)||0)+(parseInt($('mixCustomCount').value)||0):parseInt($('initTableCount').value);if(c>0)showConfirm("Generar","Se borrarán las mesas actuales. ¿Continuar?",()=>executeTableGeneration(c,m));else hide('tableConfigModal')});
+        async function executeTableGeneration(c,m){let nT={},l=[];if(m){const r=parseInt($('mixRoundCount').value)||0,rc=Math.min(parseInt($('mixRoundCap').value)||10,10),s=parseInt($('mixSquareCount').value)||0,sx=Math.min(parseInt($('mixSquareX').value)||3,3),sy=Math.min(parseInt($('mixSquareY').value)||3,3),rec=parseInt($('mixRectCount').value)||0,rx=Math.min(parseInt($('mixRectX').value)||3,5),ry=Math.min(parseInt($('mixRectY').value)||1,1),cust=parseInt($('mixCustomCount').value)||0,cl=parseFloat($('mixCustomL').value)||2,cw=parseFloat($('mixCustomW').value)||1;for(let i=0;i<r;i++)l.push({shape:'round',capacity:rc});for(let i=0;i<s;i++)l.push({shape:'square',chairsX:sx,chairsY:sy});for(let i=0;i<rec;i++)l.push({shape:'rect',chairsX:rx,chairsY:ry});for(let i=0;i<cust;i++)l.push({shape:'custom',widthM:cl,heightM:cw})}else{const sh=$('initTableShape').value,cap=Math.min(parseInt($('initTableCap').value)||10,10),cx=parseInt($('initTableX').value),cy=parseInt($('initTableY').value);const ts=sh==='custom'?'custom':sh;for(let i=0;i<c;i++)l.push({shape:ts,capacity:sh==='round'?cap:0,chairsX:sh!=='round'?cx:0,chairsY:sh!=='round'?cy:0})}const cols=Math.ceil(Math.sqrt(c));l.forEach((d,idx)=>{const i=idx+1,row=Math.floor((i-1)/cols),col=(i-1)%cols;nT[i]={id:String(i),shape:d.shape,capacity:d.capacity||0,chairsX:d.chairsX||0,chairsY:d.chairsY||0,widthM:d.widthM||0,heightM:d.heightM||0,x:2+(col*3),y:2+(row*3),rotation:0,color:'#fff'}});tablesData=nT;for(let g of allGuests)if(g.table)await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',g.id),{table:""});await saveMapToFirebase();hide('tableConfigModal');showToast("Mesas Generadas");if(typeof window.renderTablesView==='function')window.renderTablesView();renderMap()};
+        
+        window.zoomMap=d=>{mapZoom=Math.max(0.2,Math.min(5.0,mapZoom+d));renderMap()}; window.resetMapZoom=()=>{mapZoom=1.0;renderMap()};
+        window.zoomWpMap=d=>{wpMapZoom=Math.max(0.2,Math.min(5.0,wpMapZoom+d));renderWpMap()}; window.resetWpMapZoom=()=>{wpMapZoom=1.0;renderWpMap()};
+
+        window.renderMap=()=>{
+            const cv=$('venueCanvas'),cn=$('mapScrollArea');
+            if(!cn||!Object.keys(venueFloors).length)return;
+            const aw=cn.clientWidth,ah=cn.clientHeight;
+            if(!aw)return;
+            let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
+            const wallM=0.2; 
+            const chk=(x,y,w,h)=>{if(x<mx)mx=x;if(y<my)my=y;if(x+w>Mx)Mx=x+w;if(y+h>My)My=y+h};
+            
+            Object.values(venueFloors).forEach(f=>chk(f.x-wallM, f.y-wallM, f.width+wallM*2, f.height+wallM*2));
+            Object.values(tablesData).forEach(t=>{chk(t.x,t.y,(t.shape==='rect'?2.44:t.widthM||1.5),(t.shape==='rect'?0.75:t.heightM||1.5))});
+            Object.values(venueObjects).forEach(o=>chk(o.x,o.y,o.width,o.height));
+            if(mx===Infinity)return;
+            
+            scaleFactor = Math.min(aw/((Mx-mx)+4),ah/((My-my)+4));
+            const ppm=scaleFactor*mapZoom, w2sX=v=>(v-mx+2)*ppm, w2sY=v=>(v-my+2)*ppm;
+            const wallPx=wallM*ppm;
+            
+            let flCv = $('floorCanvas');
+            if (!flCv) {
+                flCv = document.createElement('canvas');
+                flCv.id = 'floorCanvas';
+                flCv.style.position = 'absolute';
+                flCv.style.left = '0';
+                flCv.style.top = '0';
+                flCv.style.zIndex = '1';
+                flCv.style.pointerEvents = 'none';
+                cv.appendChild(flCv);
+            }
+            
+            const finalW = ((Mx-mx)+4)*ppm, finalH = ((My-my)+4)*ppm;
+            cv.style.width=`${finalW}px`; cv.style.height=`${finalH}px`;
+            flCv.width = finalW; flCv.height = finalH;
+            
+            const ctx = flCv.getContext('2d');
+            ctx.clearRect(0, 0, flCv.width, flCv.height);
+
+            const isDark = document.body.classList.contains('dark') || $('adminPanel')?.classList.contains('dark');
+            const floorBg = isDark ? '#1e293b' : '#ffffff';
+            const wallColor = isDark ? '#64748b' : '#334155';
+            
+            if(!isFloorEditing) {
+                const offCv = document.createElement('canvas');
+                offCv.width = flCv.width; offCv.height = flCv.height;
+                const oCtx = offCv.getContext('2d');
+                oCtx.globalCompositeOperation = 'source-over';
+                oCtx.fillStyle = '#000';
+                Object.values(venueFloors).forEach(f => { oCtx.fillRect(w2sX(f.x - wallM), w2sY(f.y - wallM), (f.width + 2*wallM) * ppm, (f.height + 2*wallM) * ppm); });
+                oCtx.globalCompositeOperation = 'destination-out';
+                Object.values(venueFloors).forEach(f => { oCtx.fillRect(w2sX(f.x), w2sY(f.y), f.width * ppm, f.height * ppm); });
+                oCtx.globalCompositeOperation = 'source-in';
+                oCtx.fillStyle = wallColor;
+                oCtx.fillRect(0,0, offCv.width, offCv.height);
+                
+                ctx.save();
+                ctx.beginPath();
+                Object.values(venueFloors).forEach(f => { ctx.rect(w2sX(f.x), w2sY(f.y), f.width * ppm, f.height * ppm); });
+                ctx.fillStyle = floorBg;
+                ctx.fill();
+                ctx.clip(); 
+                ctx.beginPath();
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+                ctx.lineWidth = 1;
+                const startXGrid = w2sX(Math.floor(mx - 2)); 
+                const startYGrid = w2sY(Math.floor(my - 2));
+                for (let x = startXGrid; x <= finalW; x += ppm) { ctx.moveTo(x, 0); ctx.lineTo(x, finalH); }
+                for (let y = startYGrid; y <= finalH; y += ppm) { ctx.moveTo(0, y); ctx.lineTo(finalW, y); }
+                ctx.stroke();
+                ctx.restore();
+                ctx.drawImage(offCv, 0, 0);
+            } else {
+                ctx.save();
+                ctx.beginPath();
+                ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+                ctx.lineWidth = 1;
+                const startXGrid = w2sX(Math.floor(mx - 2)); 
+                const startYGrid = w2sY(Math.floor(my - 2));
+                for (let x = startXGrid; x <= finalW; x += ppm) { ctx.moveTo(x, 0); ctx.lineTo(x, finalH); }
+                for (let y = startYGrid; y <= finalH; y += ppm) { ctx.moveTo(0, y); ctx.lineTo(finalW, y); }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            let htmlContent = '';
+            const sortedFloors = Object.values(venueFloors).sort((a,b) => {
+                const ta = a.id === 'floor_default' ? 0 : parseInt(a.id.split('_')[1]) || 0;
+                const tb = b.id === 'floor_default' ? 0 : parseInt(b.id.split('_')[1]) || 0;
+                return ta - tb;
+            });
+            htmlContent += sortedFloors.map((f, i)=>{
+                const left = w2sX(f.x - (isFloorEditing ? wallM : 0));
+                const top = w2sY(f.y - (isFloorEditing ? wallM : 0));
+                const width = (f.width + (isFloorEditing ? 2*wallM : 0)) * ppm;
+                const height = (f.height + (isFloorEditing ? 2*wallM : 0)) * ppm;
+                const bWidth = isFloorEditing ? wallPx : 0;
+                return `<div id="floor-${f.id}" class="main-floor-render ${isFloorEditing?'cursor-move border-dashed border-blue-500 shadow-2xl':'static-mode'}" style="z-index:${isFloorEditing?(50+i):5}; left:${left}px;top:${top}px;width:${width}px;height:${height}px;border-width:${bWidth}px;" ${isFloorEditing?`onmousedown="initiateInteraction(event,'${f.id}','floor')" ontouchstart="initiateInteraction(event,'${f.id}','floor')"`:''}><span class="absolute -top-6 left-0 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-900 px-1 rounded shadow-sm">${f.width}m</span><span class="absolute -left-8 top-0 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-900 px-1 rounded shadow-sm">${f.height}m</span></div>`;
+            }).join('');
+            htmlContent += Object.values(venueObjects).map(o=>`<div id="obj-${o.id}" class="draggable-object venue-object ${window.isMapEditMode?'cursor-move':''} ${o.type==='pista'?'led-floor':o.type==='alberca'?'pool-water':o.type==='jardin'?'grass-texture':''}" style="width:${o.width*ppm}px;height:${o.height*ppm}px;left:${w2sX(o.x)}px;top:${w2sY(o.y)}px;transform:rotate(${o.rotation}deg);background-color:${o.color}" onmousedown="initiateInteraction(event,'${o.id}','object')" ontouchstart="initiateInteraction(event,'${o.id}','object')" ondblclick="if(window.isMapEditMode)openEditObjectModal('${o.id}')"><span class="pointer-events-none text-xs drop-shadow-md z-10 select-none font-black leading-tight no-select ${['pista','escenario'].includes(o.type)?'text-white':'text-slate-800'}">${o.name}</span></div>`).join('');
+            htmlContent += Object.values(tablesData).map(t=>{const wm=t.shape==='rect'?2.44:t.widthM||1.5,hm=t.shape==='rect'?0.75:t.heightM||1.5,wp=wm*ppm,hp=hm*ppm,guests=allGuests.filter(g=>g.table===t.id);let occ=guests.reduce((s,g)=>s+g.tickets,0),chH='';const mkC=(x,y,r=null)=>{const isOcc=occ>0;if(isOcc)occ--;let ang=r!==null?r:(Math.atan2((hp/2)-(y*ppm),(wp/2)-(x*ppm))*(180/Math.PI))+90;return `<div class="chair-tiffany" style="width:${0.45*ppm}px;height:${0.45*ppm}px;left:${x*ppm}px;top:${y*ppm}px;transform:translate(-50%,-50%) rotate(${ang}deg)"><div class="chair-back" style="background:${t.chairColor||'#000'};opacity:.3;border-color:${t.chairColor||'#000'}"></div><div class="chair-seat" style="background:${isOcc?t.occupiedColor||'#64748b':t.cushionColor||'#fff'};border-color:${t.chairColor||'#000'}"></div></div>`};if(t.shape==='round'){const rad=wm/2,srad=rad+0.275,cap=t.capacity||10;for(let i=0;i<cap;i++)chH+=mkC((wm/2)+Math.cos(i/cap*2*Math.PI)*srad,(hm/2)+Math.sin(i/cap*2*Math.PI)*srad)}else{const cx=t.chairsX||1,cy=t.chairsY||1,spX=wm/(cx+1),spY=hm/(cy+1);for(let i=1;i<=cx;i++){chH+=mkC(i*spX,-0.275,0);chH+=mkC(i*spX,hm+0.275,180)}if(t.shape!=='round')for(let i=1;i<=cy;i++){chH+=mkC(-0.275,i*spY,270);chH+=mkC(wm+0.275,i*spY,90)}}return `<div id="table-${t.id}" class="draggable-table ${window.isMapEditMode?'cursor-move':''}" style="left:${w2sX(t.x)}px;top:${w2sY(t.y)}px" onmousedown="initiateInteraction(event,'${t.id}','table')" ontouchstart="initiateInteraction(event,'${t.id}','table')" ondblclick="if(window.isMapEditMode)openEditTableModal('${t.id}')"><div class="relative shadow-lg" style="width:${wp}px;height:${hp}px;transform:rotate(${t.rotation}deg)"><div class="absolute inset-0 z-10" style="overflow:hidden;border-radius:${t.shape==='round'?'50%':'2px'}"><div class="table-cloth-base" style="background-color:${t.color||'#fff'}"></div>${t.overlay?`<div class="table-cloth-overlay" style="background-color:${t.overlayColor||'#ffd700'};width:100%;height:100%;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);transform:scale(1.25)"></div>`:''}</div><span class="absolute inset-0 flex items-center justify-center font-bold text-slate-800 z-20 pointer-events-none select-none no-select" style="transform:rotate(-${t.rotation}deg);text-shadow:0 0 2px white;font-size:${Math.max(10,ppm/2)}px">${t.id}</span><div class="absolute inset-0 z-0" style="width:100%;height:100%">${chH}</div></div></div>`}).join('');
+            cv.innerHTML = ''; cv.appendChild(flCv); cv.insertAdjacentHTML('beforeend', htmlContent);
+        };
+        
+        window.renderWpMap=()=>{
+            const cv=$('wpVenueCanvas'),cn=$('wpMapScrollArea');
+            if(!cn||!Object.keys(venueFloors).length)return;
+            const aw=cn.clientWidth,ah=cn.clientHeight;
+            if(!aw)return;
+            let mx=Infinity,my=Infinity,Mx=-Infinity,My=-Infinity;
+            const wallM=0.2; 
+            const chk=(x,y,w,h)=>{if(x<mx)mx=x;if(y<my)my=y;if(x+w>Mx)Mx=x+w;if(y+h>My)My=y+h};
+            Object.values(venueFloors).forEach(f=>chk(f.x-wallM, f.y-wallM, f.width+wallM*2, f.height+wallM*2));
+            Object.values(tablesData).forEach(t=>{chk(t.x,t.y,(t.shape==='rect'?2.44:t.widthM||1.5),(t.shape==='rect'?0.75:t.heightM||1.5))});
+            Object.values(venueObjects).forEach(o=>chk(o.x,o.y,o.width,o.height));
+            if(mx===Infinity)return;
+            wpScaleFactor = Math.min(aw/((Mx-mx)+4),ah/((My-my)+4));
+            const ppm=wpScaleFactor*wpMapZoom, w2sX=v=>(v-mx+2)*ppm, w2sY=v=>(v-my+2)*ppm;
+            const wallPx=wallM*ppm;
+            let flCv = $('wpFloorCanvas');
+            if (!flCv) { flCv = document.createElement('canvas'); flCv.id = 'wpFloorCanvas'; flCv.style.position = 'absolute'; flCv.style.left = '0'; flCv.style.top = '0'; flCv.style.zIndex = '1'; flCv.style.pointerEvents = 'none'; cv.appendChild(flCv); }
+            const finalW = ((Mx-mx)+4)*ppm, finalH = ((My-my)+4)*ppm;
+            cv.style.width=`${finalW}px`; cv.style.height=`${finalH}px`;
+            flCv.width = finalW; flCv.height = finalH;
+            const ctx = flCv.getContext('2d'); ctx.clearRect(0, 0, flCv.width, flCv.height);
+            const isDark = document.body.classList.contains('dark') || $('wendyPlannerApp')?.classList.contains('dark');
+            const floorBg = isDark ? '#1e293b' : '#ffffff'; const wallColor = isDark ? '#64748b' : '#334155';
+            
+            const offCv = document.createElement('canvas'); offCv.width = flCv.width; offCv.height = flCv.height; const oCtx = offCv.getContext('2d');
+            oCtx.globalCompositeOperation = 'source-over'; oCtx.fillStyle = '#000';
+            Object.values(venueFloors).forEach(f => { oCtx.fillRect(w2sX(f.x - wallM), w2sY(f.y - wallM), (f.width + 2*wallM) * ppm, (f.height + 2*wallM) * ppm); });
+            oCtx.globalCompositeOperation = 'destination-out';
+            Object.values(venueFloors).forEach(f => { oCtx.fillRect(w2sX(f.x), w2sY(f.y), f.width * ppm, f.height * ppm); });
+            oCtx.globalCompositeOperation = 'source-in'; oCtx.fillStyle = wallColor; oCtx.fillRect(0,0, offCv.width, offCv.height);
+            
+            ctx.save(); ctx.beginPath(); Object.values(venueFloors).forEach(f => { ctx.rect(w2sX(f.x), w2sY(f.y), f.width * ppm, f.height * ppm); });
+            ctx.fillStyle = floorBg; ctx.fill(); ctx.clip(); 
+            ctx.beginPath(); ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
+            const startXGrid = w2sX(Math.floor(mx - 2)); const startYGrid = w2sY(Math.floor(my - 2));
+            for (let x = startXGrid; x <= finalW; x += ppm) { ctx.moveTo(x, 0); ctx.lineTo(x, finalH); }
+            for (let y = startYGrid; y <= finalH; y += ppm) { ctx.moveTo(0, y); ctx.lineTo(finalW, y); }
+            ctx.stroke(); ctx.restore(); ctx.drawImage(offCv, 0, 0);
+            
+            let htmlContent = '';
+            const sortedFloors = Object.values(venueFloors).sort((a,b) => (a.id === 'floor_default' ? 0 : parseInt(a.id.split('_')[1]) || 0) - (b.id === 'floor_default' ? 0 : parseInt(b.id.split('_')[1]) || 0));
+            htmlContent += sortedFloors.map((f, i)=>`<div id="wp-floor-${f.id}" class="main-floor-render static-mode" style="z-index:5; left:${w2sX(f.x)}px;top:${w2sY(f.y)}px;width:${f.width*ppm}px;height:${f.height*ppm}px;border-width:0px;"></div>`).join('');
+            htmlContent += Object.values(venueObjects).map(o=>`<div id="wp-obj-${o.id}" class="draggable-object venue-object ${o.type==='pista'?'led-floor':o.type==='alberca'?'pool-water':o.type==='jardin'?'grass-texture':''}" style="width:${o.width*ppm}px;height:${o.height*ppm}px;left:${w2sX(o.x)}px;top:${w2sY(o.y)}px;transform:rotate(${o.rotation}deg);background-color:${o.color}; pointer-events:none;"><span class="pointer-events-none text-xs drop-shadow-md z-10 select-none font-black leading-tight no-select ${['pista','escenario'].includes(o.type)?'text-white':'text-slate-800'}">${o.name}</span></div>`).join('');
+            htmlContent += Object.values(tablesData).map(t=>{const wm=t.shape==='rect'?2.44:t.widthM||1.5,hm=t.shape==='rect'?0.75:t.heightM||1.5,wp=wm*ppm,hp=hm*ppm,guests=allGuests.filter(g=>g.table===t.id);let occ=guests.reduce((s,g)=>s+g.tickets,0),chH='';const mkC=(x,y,r=null)=>{const isOcc=occ>0;if(isOcc)occ--;let ang=r!==null?r:(Math.atan2((hp/2)-(y*ppm),(wp/2)-(x*ppm))*(180/Math.PI))+90;return `<div class="chair-tiffany" style="width:${0.45*ppm}px;height:${0.45*ppm}px;left:${x*ppm}px;top:${y*ppm}px;transform:translate(-50%,-50%) rotate(${ang}deg)"><div class="chair-back" style="background:${t.chairColor||'#000'};opacity:.3;border-color:${t.chairColor||'#000'}"></div><div class="chair-seat" style="background:${isOcc?t.occupiedColor||'#64748b':t.cushionColor||'#fff'};border-color:${t.chairColor||'#000'}"></div></div>`};if(t.shape==='round'){const rad=wm/2,srad=rad+0.275,cap=t.capacity||10;for(let i=0;i<cap;i++)chH+=mkC((wm/2)+Math.cos(i/cap*2*Math.PI)*srad,(hm/2)+Math.sin(i/cap*2*Math.PI)*srad)}else{const cx=t.chairsX||1,cy=t.chairsY||1,spX=wm/(cx+1),spY=hm/(cy+1);for(let i=1;i<=cx;i++){chH+=mkC(i*spX,-0.275,0);chH+=mkC(i*spX,hm+0.275,180)}if(t.shape!=='round')for(let i=1;i<=cy;i++){chH+=mkC(-0.275,i*spY,270);chH+=mkC(wm+0.275,i*spY,90)}}return `<div id="wp-table-${t.id}" class="draggable-table" style="left:${w2sX(t.x)}px;top:${w2sY(t.y)}px; pointer-events:none;"><div class="relative shadow-lg" style="width:${wp}px;height:${hp}px;transform:rotate(${t.rotation}deg)"><div class="absolute inset-0 z-10" style="overflow:hidden;border-radius:${t.shape==='round'?'50%':'2px'}"><div class="table-cloth-base" style="background-color:${t.color||'#fff'}"></div>${t.overlay?`<div class="table-cloth-overlay" style="background-color:${t.overlayColor||'#ffd700'};width:100%;height:100%;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);transform:scale(1.25)"></div>`:''}</div><span class="absolute inset-0 flex items-center justify-center font-bold text-slate-800 z-20 pointer-events-none select-none no-select" style="transform:rotate(-${t.rotation}deg);text-shadow:0 0 2px white;font-size:${Math.max(10,ppm/2)}px">${t.id}</span><div class="absolute inset-0 z-0" style="width:100%;height:100%">${chH}</div></div></div>`}).join('');
+            cv.innerHTML = ''; cv.appendChild(flCv); cv.insertAdjacentHTML('beforeend', htmlContent);
+        };
+
+        function setInitPos() {
+            if (dragType === 'table') { initX = tablesData[dragId].x; initY = tablesData[dragId].y; }
+            else if (dragType === 'object') { initX = venueObjects[dragId].x; initY = venueObjects[dragId].y; }
+            else { initX = venueFloors[dragId].x; initY = venueFloors[dragId].y; }
+        }
+
+        function initiateInteraction(e,id,type){
+            if(type !== 'floor' && !window.isMapEditMode) return;
+            if(type === 'floor' && !isFloorEditing) return;
+            
+            e.stopPropagation();
+            hasMoved=false;
+            if(e.type==='mousedown'){
+                dragId=id;dragType=type;isDragging=true;
+                startX=e.clientX; startY=e.clientY;
+                setInitPos();
+                let elId = type==='table'?'table-'+id:(type==='object'?'obj-'+id:'floor-'+id);
+                $(elId)?.classList.add('is-dragging');
+                return;
+            }
+            if(e.type==='touchstart'){
+                const now=new Date().getTime();
+                if(lastTap.id===id && now-lastTap.time<300){
+                    if(longPressTimer) clearTimeout(longPressTimer);
+                    e.preventDefault();
+                    if(window.isMapEditMode) {
+                        if(type==='table') openEditTableModal(id);
+                        else if(type==='object') openEditObjectModal(id);
+                    }
+                    lastTap={time:0,id:null};
+                    return;
+                }
+                lastTap={time:now,id};
+                const tx = e.touches[0].clientX;
+                const ty = e.touches[0].clientY;
+                touchStartPos={x:tx,y:ty};
+                longPressTimer=setTimeout(()=>{
+                    dragId=id;dragType=type;isDragging=true;
+                    startX=tx; startY=ty;
+                    setInitPos();
+                    if(navigator.vibrate)navigator.vibrate(50);
+                    let elId = type==='table'?'table-'+id:(type==='object'?'obj-'+id:'floor-'+id);
+                    $(elId)?.classList.add('is-dragging');
+                },300); 
+            }
+        }
+        
+        const ma=$('mapScrollArea');
+        const mh=e=>{
+            if(e.type==='touchmove' && !isDragging && longPressTimer){
+                if(Math.hypot(e.touches[0].clientX-touchStartPos.x, e.touches[0].clientY-touchStartPos.y) > 10) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                return; 
+            }
+            if(!isDragging||!dragId) return;
+            if(e.cancelable) e.preventDefault(); 
+            
+            const c=(e.touches&&e.touches.length)?e.touches[0]:e, ppm=scaleFactor*mapZoom;
+            const dx=(c.clientX-startX)/ppm, dy=(c.clientY-startY)/ppm;
+            if(Math.hypot(c.clientX-startX, c.clientY-startY) > 5) hasMoved=true;
+            let nx=initX+dx, ny=initY+dy;
+            
+            if (dragType === 'floor') {
+                const SNAP_DIST = 0.8; 
+                let targetNx = nx; let targetNy = ny; let snappedX = false; let snappedY = false;
+                const dragged = venueFloors[dragId];
+                Object.values(venueFloors).forEach(target => {
+                    if(target.id === dragId) return;
+                    const dL = nx, dR = nx + dragged.width, dT = ny, dB = ny + dragged.height;
+                    const tL = target.x, tR = target.x + target.width, tT = target.y, tB = target.y + target.height;
+                    const snapLeft = Math.abs(dR - tL) < SNAP_DIST, snapRight = Math.abs(dL - tR) < SNAP_DIST;
+                    const snapTop = Math.abs(dB - tT) < SNAP_DIST, snapBottom = Math.abs(dT - tB) < SNAP_DIST;
+                    const overlapY = (dB > tT - SNAP_DIST) && (dT < tB + SNAP_DIST);
+                    const overlapX = (dR > tL - SNAP_DIST) && (dL < tR + SNAP_DIST);
+                    if (!snappedX && overlapY) { if (snapLeft) { targetNx = tL - dragged.width; snappedX = true; } else if (snapRight) { targetNx = tR; snappedX = true; } }
+                    if (!snappedY && overlapX) { if (snapTop) { targetNy = tT - dragged.height; snappedY = true; } else if (snapBottom) { targetNy = tB; snappedY = true; } }
+                    if (snappedX && !snappedY) { if (Math.abs(dT - tT) < SNAP_DIST) { targetNy = tT; snappedY = true; } else if (Math.abs(dB - tB) < SNAP_DIST) { targetNy = tB - dragged.height; snappedY = true; } }
+                    if (snappedY && !snappedX) { if (Math.abs(dL - tL) < SNAP_DIST) { targetNx = tL; snappedX = true; } else if (Math.abs(dR - tR) < SNAP_DIST) { targetNx = tR - dragged.width; snappedX = true; } }
+                });
+                nx = targetNx; ny = targetNy;
+            }
+
+            if(dragType==='table'){
+                tablesData[dragId].x=nx;tablesData[dragId].y=ny;
+                const el=$('table-'+dragId);if(el)el.style.transform=`translate(${(nx-initX)*ppm}px,${(ny-initY)*ppm}px)`
+            }else if(dragType==='object'){
+                venueObjects[dragId].x=nx;venueObjects[dragId].y=ny;
+                const el=$('obj-'+dragId);if(el)el.style.transform=`translate(${(nx-initX)*ppm}px,${(ny-initY)*ppm}px)`
+            }else{ 
+                venueFloors[dragId].x=nx;venueFloors[dragId].y=ny;
+                const el=$('floor-'+dragId);if(el)el.style.transform=`translate(${(nx-initX)*ppm}px,${(ny-initY)*ppm}px)`
+            }
+        };
+        const eh=()=>{
+            if(longPressTimer)clearTimeout(longPressTimer);
+            if(isDragging&&dragId){
+                if(hasMoved){ saveMapToFirebase(); renderMap(); }
+                let elId = dragType==='table'?'table-'+dragId:(dragType==='object'?'obj-'+dragId:'floor-'+dragId);
+                $(elId)?.classList.remove('is-dragging');
+            }
+            dragId=null;isDragging=false;hasMoved=false;
+        };
+        
+        if(ma){
+            let ipd=0,iz=1;
+            ma.addEventListener('touchstart',e=>{
+                if(e.touches.length===2){
+                    if(e.cancelable) e.preventDefault();
+                    ipd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+                    iz=mapZoom;
+                }
+            },{passive:false});
+            ma.addEventListener('touchmove',e=>{
+                if(e.touches.length===2){
+                    if(e.cancelable) e.preventDefault();
+                    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+                    if(ipd>0){
+                        mapZoom=Math.max(0.2,Math.min(5.0,iz*(d/ipd)));
+                        requestAnimationFrame(renderMap);
+                    }
+                }else{
+                    mh(e);
+                }
+            },{passive:false});
+            ma.addEventListener('touchend',e=>{
+                if(e.touches.length<2){ipd=0;eh();}
+            });
+            ma.addEventListener('mousemove',mh); 
+            ma.addEventListener('mouseup',eh); 
+            ma.addEventListener('mouseleave',eh);
+        }
+        
+        const wpMa=$('wpMapScrollArea');
+        if(wpMa){
+            let wpIpd=0, wpIz=1;
+            wpMa.addEventListener('touchstart',e=>{
+                if(e.touches.length===2){
+                    if(e.cancelable) e.preventDefault();
+                    wpIpd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+                    wpIz=wpMapZoom;
+                }
+            },{passive:false});
+            wpMa.addEventListener('touchmove',e=>{
+                if(e.touches.length===2){
+                    if(e.cancelable) e.preventDefault();
+                    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+                    if(wpIpd>0){
+                        wpMapZoom=Math.max(0.2,Math.min(5.0,wpIz*(d/wpIpd)));
+                        requestAnimationFrame(renderWpMap);
+                    }
+                }
+            },{passive:false});
+            wpMa.addEventListener('touchend',e=>{
+                if(e.touches.length<2){wpIpd=0;}
+            });
+        }
+
+        window.saveMapToFirebase=async()=>{try{await window.setDoc(window.doc(window.db,'artifacts',window.appId,'public','data','settings','config'),{tablesData,venueObjects,venueFloors,recentColors,lastChairConfig},{merge:true})}catch(e){}};
+        window.openAddGuestModal=()=>show('addGuestModal'); window.adjustTickets=d=>{$('inputTickets').value=Math.max(1,parseInt($('inputTickets').value)+d)};
+        $('addGuestFormModal')?.addEventListener('submit',async e=>{e.preventDefault();try{const n=$('inputName').value, p=`${$('countryCodeSelect').value}${$('inputPhone').value}`; const docRef = await window.addDoc(window.collection(window.db,'artifacts',window.appId,'public','data','guests'),{name:n,phone:p,tickets:parseInt($('inputTickets').value),table:"",confirmed:false,checkedIn:false,createdAt:Date.now()});hide('addGuestModal');e.target.reset();showToast("Invitado Agregado");window.resendInvitation(docRef.id, n, p);}catch(e){showAlert("Error","Error al guardar","error")}});
+        window.confirmDeleteGuest=id=>showConfirm("Eliminar","¿Seguro?",async()=>{await window.deleteDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',id));showToast("Eliminado");hide('guestDetailModal')});
+        window.openMobileDetails=id=>{currentMobId=id;const g=allGuests.find(x=>x.id===id);if(!g)return;$('mobName').innerText=g.name;$('mobPhone').innerText=g.phone;$('mobTickets').innerText=g.tickets;$('mobTableDisplay').innerText=g.table||"Sin Mesa";const b=$('mobStatusBadge');b.className="w-full py-3.5 rounded-xl text-center font-bold text-sm mb-6 border";if(g.checkedIn){b.innerText="YA INGRESÓ";b.classList.add('bg-green-100','text-green-600','border-green-200')}else if(g.confirmed){b.innerText="CONFIRMADO";b.classList.add('bg-yellow-100','text-yellow-600','border-yellow-200')}else{b.innerText="PENDIENTE";b.classList.add('bg-slate-100','text-slate-500','border-slate-200')}$('btnEditMobPax').onclick=()=>window.openEditGuestPax(id,g.tickets);$('mobEditTableBtn').onclick=()=>window.openEditGuestTable(id,g.table);$('btnVerQR').onclick=()=>window.showGuestQR(id,g.name,g.tickets);$('btnEliminarInvitacion').onclick=()=>window.confirmDeleteGuest(id);show('guestDetailModal')};
+        window.openEditGuestPax=(id,c)=>{$('editGP_id').value=id;$('editGP_input').value=c;show('editGuestPaxModal')};
+        $('editGuestPaxForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('editGP_id').value,p=parseInt($('editGP_input').value);await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',id),{tickets:p});hide('editGuestPaxModal');if(!$('guestDetailModal')?.classList.contains('hidden'))$('mobTickets').innerText=p});
+        window.openEditGuestTable=(id,ct)=>{$('editGT_id').value=id;const s=$('editGT_select');s.innerHTML='<option value="">Sin Asignar</option>';Object.values(tablesData).sort((a,b)=>a.id.localeCompare(b.id,undefined,{numeric:true})).forEach(t=>{const cap=window.getGuestTableCapacity(t),occ=allGuests.filter(g=>g.table===t.id&&g.id!==id).reduce((sum,g)=>sum+g.tickets,0),opt=document.createElement('option');opt.value=t.id;opt.text=`Mesa ${t.id} (${cap-occ} libres)`;if(t.id===ct)opt.selected=true;s.appendChild(opt)});show('editGuestTableModal')};
+        $('editGuestTableForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('editGT_id').value,tid=$('editGT_select').value;if(tid){const g=allGuests.find(x=>x.id===id),t=tablesData[tid],occ=allGuests.filter(gx=>gx.table===tid&&gx.id!==id).reduce((s,gx)=>s+gx.tickets,0);if(occ+g.tickets>window.getGuestTableCapacity(t)){$('twMesa').innerText=tid;$('twDisp').innerText=window.getGuestTableCapacity(t)-occ;$('twReq').innerText=g.tickets;$('btnAutoSingle').onclick=()=>{assignGuestToTable(id,tid);hide('tableWarningModal')};show('tableWarningModal');return}}await assignGuestToTable(id,tid);hide('editGuestTableModal')});
+        async function assignGuestToTable(gid,tid){await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',gid),{table:tid});if(!$('guestDetailModal')?.classList.contains('hidden'))$('mobTableDisplay').innerText=tid||"Sin Mesa"};
+        window.closeTableWarning=()=>hide('tableWarningModal'); window.resendInvitation=(id,n,p)=>window.open(`https://wa.me/${p}?text=${encodeURIComponent(`Hola ${n}, aquí tienes tu pase: ${window.location.origin}${window.location.pathname}?view=guest&id=${id}`)}`,'_blank');
+        
+        window.showGuestQR=(id,n,p)=>{
+            $('qrModalName').innerText=n;
+            $('qrModalID').innerText="ID: "+id.substring(0,8).toUpperCase();
+            $('qrModalPax').innerHTML=`<i class="fas fa-users text-slate-400 mr-2"></i> ${p} Personas`;
+            const c=$('qrModalCanvas');c.innerHTML='';
+            new QRCode(c,{text:id,width:160,height:160,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});
+            if(eventConfig.imageUrl){
+                $('qrModalCover').src=eventConfig.imageUrl;
+                show('qrModalCoverWrapper');
+            } else {
+                hide('qrModalCoverWrapper');
+            }
+            show('qrPreviewModal');
+        };
+        
+        window.downloadQrTicket=async()=>{
+            const tc = $('ticketContainer');
+            const modal = tc.closest('.bg-white');
+            showToast("Generando pase...", "info");
+            try {
+                await new Promise(r => setTimeout(r, 300)); 
+                const c = await html2canvas(tc, { 
+                    scale: 3, 
+                    useCORS: true, 
+                    backgroundColor: '#ffffff', 
+                    allowTaint: true 
+                });
+                const l = document.createElement('a'); 
+                l.download = `Pase_${$('qrModalName').innerText.replace(/\s+/g,'_')}.png`; 
+                l.href = c.toDataURL('image/png'); 
+                l.click();
+                showToast("Descargado correctamente");
+            } catch (err) { 
+                showToast("Error al guardar imagen", "error"); 
+            } 
+        };
+
+        window.copyPlannerLink=()=>{$('plannerLinkInput').select();document.execCommand("copy");showToast("Copiado")};
+        
+        window.manualWpCheckin=(id,name)=>{showConfirm("Acceso Manual",`¿Confirmar entrada de ${name}?`,async()=>{await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',id),{checkedIn:true,confirmed:true});showToast("Entrada registrada")})};
+        window.openReceptionView=()=>{show('wendyPlannerApp');setTimeout(()=>$('wendyPlannerApp')?.classList.remove('translate-y-full'),50);window.switchWpTab('scanner');if(!wpIntroShown){setTimeout(()=>show('wpInstructionsModal'),500);wpIntroShown=true}};
+        window.closeReceptionView=()=>{$('wendyPlannerApp')?.classList.add('translate-y-full');setTimeout(()=>{hide('wendyPlannerApp');if(html5QrCode){html5QrCode.stop().then(()=>{html5QrCode.clear();html5QrCode=null})}},300)};
+        
+        window.switchWpTab=(t)=>{
+            ['scanner','list','map'].forEach(x=>{hide(`wp-tab-${x}`);const b=$(`wp-btn-${x}`);if(b){b.classList.remove('text-blue-600');b.classList.add('text-slate-400');}});
+            show(`wp-tab-${t}`);const actBtn=$(`wp-btn-${t}`);if(actBtn){actBtn.classList.add('text-blue-600');actBtn.classList.remove('text-slate-400');}
+            if(t==='scanner'){
+                window.wpScanActive = true; 
+                if(!html5QrCode){ html5QrCode=new Html5Qrcode("reader"); html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:250},aspectRatio:1.0},onScanSuccess); }
+            } else { 
+                window.wpScanActive = false; 
+            }
+            if(t==='list') window.renderWPList();
+            if(t==='map') setTimeout(renderWpMap,100);
+        };
+        
+        function onScanSuccess(t){
+            if(!window.wpScanActive) return; 
+            window.wpScanActive = false; 
+            let sid=t.trim();if(sid.includes('id=')){try{sid=new URL(sid).searchParams.get('id')||sid}catch(e){}}
+            else if(sid.includes('?')){ try{sid=new URL(sid).searchParams.get('id')||sid}catch(e){} }
+            checkinGuest(sid);
+        }
+        
+        async function checkinGuest(id){
+            const g=allGuests.find(x=>x.id===id);
+            if(!g){
+                $('wpScanIcon').innerHTML='<i class="fas fa-times-circle text-red-500"></i>'; $('wpScanName').innerText='No Encontrado'; $('wpScanStatus').innerText='QR INVÁLIDO'; $('wpScanStatus').className='text-xs font-black px-4 py-1.5 rounded-full mb-6 tracking-widest uppercase shadow-sm bg-red-100 text-red-700'; $('wpScanTable').innerText='-'; $('wpScanPax').innerText='-'; show('wpScanModal');
+                if(window.wpScanTimer) clearTimeout(window.wpScanTimer);
+                window.wpScanTimer = setTimeout(closeWpScanModal, 2500);
+                return;
+            }
+            $('wpScanName').innerText=g.name; $('wpScanTable').innerText=g.table||"Sin Mesa"; $('wpScanPax').innerText=g.tickets;
+            if(g.checkedIn){
+                $('wpScanIcon').innerHTML='<i class="fas fa-exclamation-circle text-yellow-500"></i>'; $('wpScanStatus').innerText='YA INGRESÓ'; $('wpScanStatus').className='text-xs font-black px-4 py-1.5 rounded-full mb-6 tracking-widest uppercase shadow-sm bg-yellow-100 text-yellow-700';
+            }else{
+                $('wpScanIcon').innerHTML='<i class="fas fa-check-circle text-green-500"></i>'; $('wpScanStatus').innerText='ACCESO CONCEDIDO'; $('wpScanStatus').className='text-xs font-black px-4 py-1.5 rounded-full mb-6 tracking-widest uppercase shadow-sm bg-green-100 text-green-700';
+                await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',id),{checkedIn:true,confirmed:true});
+                showToast("Entrada registrada");
+            }
+            show('wpScanModal');
+            if(window.wpScanTimer) clearTimeout(window.wpScanTimer);
+            window.wpScanTimer = setTimeout(closeWpScanModal, 2500); 
+        };
+        
+        window.closeWpScanModal=()=>{
+            hide('wpScanModal');
+            if(window.wpScanTimer) clearTimeout(window.wpScanTimer);
+            setTimeout(() => { window.wpScanActive = true; }, 500); 
+        };
+        
+        window.removeConfigImage = () => { $('configImagePreview').src = ''; hide('configImagePreview'); $('configImageUrlHidden').value = ''; hide('btnRemoveConfigImage'); };
+        window.autoAssignAll=async()=>{const u=allGuests.filter(g=>!g.table);if(!u.length)return showAlert("Info","Todos tienen mesa.");showToast("Calculando...");u.sort((a,b)=>b.tickets-a.tickets);let tm={},log=[],ups=[];Object.values(tablesData).forEach(t=>{tm[t.id]={id:t.id,cap:window.getGuestTableCapacity(t),used:allGuests.filter(g=>g.table===t.id).reduce((s,g)=>s+g.tickets,0)}});for(let g of u){let best=null,min=Infinity;for(let k in tm){let sp=tm[k].cap-tm[k].used;if(sp>=g.tickets&&sp<min){min=sp;best=tm[k]}}if(best){ups.push({g,t:best.id});best.used+=g.tickets;log.push(`✔ ${g.name} -> Mesa ${best.id}`)}else log.push(`✘ ${g.name} -> Sin espacio`)}for(let x of ups)await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',x.g.id),{table:x.t});showToast("Acomodo completado")};
+        window.closeAaResult=()=>hide('aaResultModal'); window.openConfigModal=()=>show('configModal');
+        if($('configImageFile'))$('configImageFile').addEventListener('change',e=>{const f=e.target.files[0];if(f){if(f.size>800000)return showAlert("Error","Imagen muy grande (<800KB).","error");const r=new FileReader();r.onload=ev=>{$('configImagePreview').src=ev.target.result;show('configImagePreview');show('btnRemoveConfigImage');$('configImageUrlHidden').value=ev.target.result};r.readAsDataURL(f)}});
+        if($('configForm'))$('configForm').addEventListener('submit',async e=>{e.preventDefault();try{await window.setDoc(window.doc(window.db,'artifacts',window.appId,'public','data','settings','config'),{imageUrl:$('configImageUrlHidden').value},{merge:true});eventConfig.imageUrl=$('configImageUrlHidden').value;if($('metaOgImage'))$('metaOgImage').content=$('configImageUrlHidden').value;hide('configModal');showToast("Guardado")}catch(e){showAlert("Error","Error al guardar","error")}});
+        window.openEditTableModal=id=>{const f=$('editTableForm');if(!f)return;f.reset();hide('overlayColorDiv');renderRecentColors();if(id==='new'){$('editTableTitle').innerText="Nueva Mesa";$('editTableId').value="";$('editTableLabel').value=Object.keys(tablesData).length+1;$('editTableShape').value='round';hide('btnDeleteTable');$('editDimLargo').value=2;$('editDimAncho').value=1;$('editChairColor').value=lastChairConfig.chair;$('editCushionColor').value=lastChairConfig.cushion;$('editOccupiedColor').value=lastChairConfig.occupied;updateInitInputs()}else{const t=tablesData[id];if(!t)return;$('editTableTitle').innerText="Editar: "+id;$('editTableId').value=id;$('editTableLabel').value=t.id;$('editTableShape').value=t.shape;$('editTableRotation').value=t.rotation||0;$('rotVal').innerText=(t.rotation||0)+"°";$('editTableColor').value=t.color||'#ffffff';$('editTableOverlayCheck').checked=t.overlay||false;if(t.overlay)show('overlayColorDiv');$('editTableOverlayColor').value=t.overlayColor||'#ffd700';$('editChairColor').value=t.chairColor||'#000000';$('editCushionColor').value=t.cushionColor||'#ffffff';$('editOccupiedColor').value=t.occupiedColor||'#64748b';if(t.widthM)$('editDimLargo').value=t.widthM;if(t.heightM)$('editDimAncho').value=t.heightM;updateInitInputs();if(t.shape==='round')$('editCapRound').value=t.capacity;else{$('editCapX').value=t.chairsX;$('editCapY').value=t.chairsY}show('btnDeleteTable')}show('editTableModal')};
+        window.adjustTableRotation=d=>{$('editTableRotation').value=(parseInt($('editTableRotation').value)+d)%360;$('rotVal').innerText=$('editTableRotation').value+'°'}; window.resetTableRotation=()=>{$('editTableRotation').value=0;$('rotVal').innerText='0°'};
+        window.renderRecentColors=()=>{const c=$('recentColorsContainer'),s=$('recentColorsSection');c.innerHTML='';if(!recentColors.length){hide('recentColorsSection');return}show('recentColorsSection');recentColors.forEach(cl=>{const d=document.createElement('div');d.className='color-swatch';d.style.backgroundColor=cl;d.onclick=()=>$('editTableColor').value=cl;c.appendChild(d)})};
+        window.saveRecentColor=c=>{if(!c)return;if(recentColors.includes(c))recentColors.splice(recentColors.indexOf(c),1);recentColors.unshift(c);if(recentColors.length>5)recentColors.pop()};
+        window.updateEditInputs=()=>{const s=$('editTableShape').value;hide('editRoundGroup');hide('editSquareGroup');hide('editCustomDims');$('editSquareGroup').classList.remove('flex');if(s==='round')show('editRoundGroup');else{show('editSquareGroup');$('editSquareGroup').classList.add('flex');const x=$('editCapX'),y=$('editCapY');if(s==='square'){x.max=3;y.max=3;y.removeAttribute('readonly');y.classList.remove('bg-slate-200','text-slate-500')}else if(s==='rect'){x.max=5;y.max=1;y.removeAttribute('readonly');y.classList.remove('bg-slate-200','text-slate-500')}else{x.removeAttribute('max');y.removeAttribute('max');y.removeAttribute('readonly');y.classList.remove('bg-slate-200','text-slate-500');show('editCustomDims');$('editCustomDims').classList.add('grid')}}};
+        $('editTableForm')?.addEventListener('submit',e=>{e.preventDefault();const oid=$('editTableId').value,nid=$('editTableLabel').value,s=$('editTableShape').value,col=$('editTableColor').value,ov=$('editTableOverlayCheck').checked,ovc=$('editTableOverlayColor').value;saveRecentColor(col);if(ov)saveRecentColor(ovc);lastChairConfig={chair:$('editChairColor').value,cushion:$('editCushionColor').value,occupied:$('editOccupiedColor').value};const nt={id:nid,shape:s,rotation:parseInt($('editTableRotation').value)||0,color:col,overlay:ov,overlayColor:ovc,chairColor:lastChairConfig.chair,cushionColor:lastChairConfig.cushion,occupiedColor:lastChairConfig.occupied,capacity:s==='round'?parseInt($('editCapRound').value)||10:0,chairsX:s!=='round'?parseInt($('editCapX').value)||3:0,chairsY:s!=='round'?parseInt($('editCapY').value)||1:0,widthM:s==='custom'?parseFloat($('editDimLargo').value)||2:0,heightM:s==='custom'?parseFloat($('editDimAncho').value)||1:0,x:oid?tablesData[oid].x:5,y:oid?tablesData[oid].y:5};if(oid&&oid!==nid){delete tablesData[oid];allGuests.forEach(g=>{if(g.table===oid)window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',g.id),{table:nid})})}tablesData[nid]=nt;saveMapToFirebase();hide('editTableModal');renderMap();if(!$('view-tables')?.classList.contains('hidden'))window.renderTablesView()});
+        window.deleteTableFromMap=()=>{const id=$('editTableId').value;showConfirm("Eliminar","¿Seguro?",()=>{delete tablesData[id];saveMapToFirebase();hide('editTableModal');renderMap();if(!$('view-tables')?.classList.contains('hidden'))window.renderTablesView()})};
+        window.emptyAllTables=()=>showConfirm("VACIAR","¿Quitar invitados?",async()=>{try{for(let g of allGuests)if(g.table)await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',g.id),{table:""});showToast("Vaciado");if(!$('view-tables')?.classList.contains('hidden'))window.renderTablesView()}catch(e){showAlert("Error","Error","error")}});
+        window.deleteAllTables=()=>showConfirm("ELIMINAR TODO","¿Borrar todas?",async()=>{try{tablesData={};for(let g of allGuests)if(g.table)await window.updateDoc(window.doc(window.db,'artifacts',window.appId,'public','data','guests',g.id),{table:""});await saveMapToFirebase();renderMap();if(!$('view-tables')?.classList.contains('hidden'))window.renderTablesView();showToast("Eliminadas")}catch(e){showAlert("Error","Error","error")}});
+        window.openEditObjectModal=(id,type)=>{$('addObjDropdown')?.classList.remove('show');const f=$('editObjectForm');if(!f)return;f.reset();if(id==='new'){$('editObjId').value='obj_'+Date.now();$('editObjType').value=type;$('editObjRotation').value=0;let d={pista:{n:"Pista Baile",w:5,h:5,c:"#333"},escenario:{n:"Escenario",w:6,h:3,c:"#000"},dj:{n:"DJ",w:2,h:1,c:"#1a1a1a"},barra:{n:"Barra",w:3,h:1,c:"#8b4513"},mesa_honor:{n:"Mesa Honor",w:4,h:1,c:"#fff"},entrada:{n:"Entrada",w:2,h:0.5,c:"#0f0"},bano:{n:"Baños",w:3,h:2,c:"#0ff"},deco:{n:"Set Fotos",w:3,h:2,c:"#f43f5e"},brincolin:{n:"Brincolín",w:4,h:4,c:"#fb923c"},alberca:{n:"Alberca",w:8,h:4,c:"#38bdf8"},jardin:{n:"Jardín",w:10,h:5,c:"#4ade80"},pinata:{n:"Piñata",w:2,h:2,c:"#facc15"},animacion:{n:"Animación",w:3,h:3,c:"#a855f7"},custom:{n:"Elemento",w:1,h:1,c:"#ccc"}}[type]||{n:"Objeto",w:1,h:1,c:"#ccc"};$('editObjName').value=d.n;$('editObjWidth').value=d.w;$('editObjHeight').value=d.h;$('editObjColor').value=d.c}else{const o=venueObjects[id];if(o){$('editObjId').value=id;$('editObjType').value=o.type;$('editObjName').value=o.name;$('editObjWidth').value=o.width;$('editObjHeight').value=o.height;$('editObjColor').value=o.color;$('editObjRotation').value=o.rotation}}show('editObjectModal')};
+        $('editObjectForm')?.addEventListener('submit',e=>{e.preventDefault();const id=$('editObjId').value,isNew=!venueObjects[id];venueObjects[id]={id,type:$('editObjType').value,name:$('editObjName').value,width:parseFloat($('editObjWidth').value),height:parseFloat($('editObjHeight').value),color:$('editObjColor').value,rotation:parseInt($('editObjRotation').value),x:isNew?5:venueObjects[id].x,y:isNew?5:venueObjects[id].y};saveMapToFirebase();hide('editObjectModal');renderMap()});
+        window.deleteObject=()=>{delete venueObjects[$('editObjId').value];saveMapToFirebase();hide('editObjectModal');renderMap()};
+    </script>
+</body>
+</html>
